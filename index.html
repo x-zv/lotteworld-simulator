@@ -334,10 +334,10 @@ addItems('매직아일랜드','shop',['매직캐슬 트레져스']);
 const serviceItems=[
   {name:'엘리베이터 북측',kind:'elevator',x:-62,z:-12,multi:true},
   {name:'엘리베이터 남측',kind:'elevator',x:62,z:48,multi:true},
-  {name:'에스컬레이터 서측',kind:'escalator',x:-56,z:30,floor:'1F'},
-  {name:'에스컬레이터 동측',kind:'escalator',x:56,z:-4,floor:'1F'},
-  {name:'계단 서측',kind:'stairs',x:-64,z:3,floor:'1F'},
-  {name:'계단 동측',kind:'stairs',x:64,z:27,floor:'1F'},
+  {name:'에스컬레이터 서측',kind:'escalator',x:-56,z:30,floor:'1F',multi:true},
+  {name:'에스컬레이터 동측',kind:'escalator',x:56,z:-4,floor:'1F',multi:true},
+  {name:'계단 서측',kind:'stairs',x:-64,z:3,floor:'1F',multi:true},
+  {name:'계단 동측',kind:'stairs',x:64,z:27,floor:'1F',multi:true},
   {name:'화장실 북측',kind:'service',x:-62,z:-22,floor:'1F',detail:'화장실 위치 안내'},
   {name:'화장실 남측',kind:'service',x:62,z:57,floor:'1F',detail:'화장실 위치 안내'},
   {name:'의무실',kind:'service',x:-54,z:52,floor:'1F',detail:'도움이 필요할 때 직원에게 안내를 요청할 수 있는 공간'},
@@ -482,7 +482,7 @@ function nearestInteractable(){
   if(currentRide||elevatorTransit||modal.classList.contains('open'))return null;
   let nearest=null,best=9.5;
   for(const f of facilities){
-    if(f.kind==='elevator'&&f.multi){
+    if(['elevator','escalator','stairs'].includes(f.kind)&&f.multi){
       const d=Math.hypot(player.position.x-f.x,player.position.z-f.z);
       if(d<best){best=d;nearest=f}continue;
     }
@@ -574,7 +574,10 @@ function endRide(){
   if(!currentRide)return;
   const ride=currentRide;scene.remove(ride.vehicle);player.visible=true;
   player.position.set(ride.origin.x,ride.origin.y,ride.origin.z+5);
-  currentRide=null;showToast('탑승이 종료되었습니다. 하차했습니다.');
+  currentRide=null;
+  const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
+  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+  showToast('탑승이 종료되었습니다. 하차했습니다.');
 }
 function updateRide(now){
   if(!currentRide)return;
@@ -608,7 +611,8 @@ function updateElevator(now){
   player.position.y=elevatorTransit.fromY+(elevatorTransit.toY-elevatorTransit.fromY)*eased;
   const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
   const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
-  if(t>=1){const dest=elevatorTransit.destination;player.position.y=floorHeight[dest];elevatorTransit=null;showToast(dest+' 도착');}
+  if(elevatorTransit.facility.cabin)elevatorTransit.facility.cabin.position.y=player.position.y-floorHeight['B1F']+0.5;
+  if(t>=1){const dest=elevatorTransit.destination;player.position.y=floorHeight[dest];if(elevatorTransit.facility.cabin)elevatorTransit.facility.cabin.position.y=player.position.y-floorHeight['B1F']+0.5;elevatorTransit=null;showToast(dest+' 도착');}
 }
 function startMeal(f,menu){
   closeModal();if(foodTransit)return;
@@ -632,20 +636,18 @@ function updateWalk(dt){
     player.position.addScaledVector(direction,speed);
     player.rotation.y=Math.atan2(direction.x,direction.z);
   }
-  const floor=currentFloor();
-  if(floor==='매직아일랜드'){
+  const onIsland=player.position.z<=-67;
+  if(onIsland){
     player.position.x=THREE.MathUtils.clamp(player.position.x,-62,62);
-    player.position.z=THREE.MathUtils.clamp(player.position.z,-166,-64);
+    player.position.z=THREE.MathUtils.clamp(player.position.z,-166,-67);
+    const ellipse=(player.position.x/63)**2+((player.position.z+112)/49)**2;
+    if(ellipse>1.12){player.position.z=-66.5;player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5)}
   }else{
     player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
     player.position.z=THREE.MathUtils.clamp(player.position.z,-29,87);
-    if(floor!=='1F')player.position.z=THREE.MathUtils.clamp(player.position.z,-23,63);
+    if(currentFloor()!=='1F')player.position.z=THREE.MathUtils.clamp(player.position.z,-23,63);
     // On the bridge, keep the visitor on the deck over the lake.
     if(player.position.z<-30&&player.position.z>-67)player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5);
-    if(player.position.z<=-67){
-      const ellipse=(player.position.x/62)**2+((player.position.z+112)/49)**2;
-      if(ellipse>1.06){player.position.z=-66.5;player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5)}
-    }
   }
   if(player.position.z>63&&floor==='1F')player.position.y=floorHeight['1F'];
   const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
