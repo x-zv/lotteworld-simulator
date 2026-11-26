@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lotte World Simulator — Early Build</title>
+<title>Lotte World Simulator — Walkable Park</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,Pretendard,"Noto Sans KR",system-ui,sans-serif}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d}
@@ -67,7 +67,7 @@ button:hover{background:#24415a}
 <div id="scene"></div><div id="labels"></div>
 <div id="loading">롯데월드 기본 공간을 구성하는 중…</div>
 <div class="hud top">
-  <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span>EARLY BLOCKOUT · 3D WORLD</span></div>
+  <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span>WALKABLE BLOCKOUT · 3D WORLD</span></div>
   <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<div id="paradeStatus" style="margin-top:9px;padding-top:8px;border-top:1px solid #ffffff20;color:#fff1cf">계절별 퍼레이드<br>시즌에 맞는 테마가 자동 선택됩니다</div><span style="color:#8fa5ba">가상 시뮬레이션은 10분 간격으로 진행</span></div>
 </div>
 <div class="hud bottom">
@@ -386,12 +386,12 @@ const facilityMaterials={
   elevator:mat(0x8fc0ce,.25),escalator:mat(0x667b8c,.6),stairs:mat(0x7c8d9b,.7)
 };
 function signTexture(text,color){
-  const canvas=document.createElement('canvas');canvas.width=640;canvas.height=150;
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=112;
   const ctx=canvas.getContext('2d');
   ctx.fillStyle='#111d2b';ctx.fillRect(0,0,640,150);
   ctx.fillStyle=color;ctx.fillRect(0,0,12,150);
-  ctx.fillStyle='#f3f6f7';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  let t=text;if(t.length>16)t=t.slice(0,15)+'…';ctx.fillText(t,330,76,580);
+  ctx.fillStyle='#f3f6f7';ctx.font='bold 31px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  let t=text;if(t.length>16)t=t.slice(0,15)+'…';ctx.fillText(t,266,57,460);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
 }
 function buildFacilityModel(f){
@@ -515,7 +515,7 @@ function renderPrompt(){
   activeFacility=nearestInteractable();
   if(activeFacility){
     const how=activeFacility.kind==='ride'?'탑승하기':activeFacility.kind==='restaurant'?'식당 이용하기':activeFacility.kind==='elevator'?'층 선택하기':activeFacility.kind==='escalator'||activeFacility.kind==='stairs'?'층 이동하기':activeFacility.kind==='shop'?'매장 둘러보기':'시설 이용하기';
-    prompt.textContent=activeFacility.name+' · '+how+'  [E]';
+    prompt.textContent=currentFloor()+' · '+activeFacility.name+' · '+how+'  [E]';
     actionButton.textContent=how;
     actionButton.style.background='#f1c66e';
   }else{
