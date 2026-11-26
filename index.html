@@ -351,7 +351,15 @@ const serviceItems=[
   {name:'음수대',kind:'service',x:0,z:54,floor:'1F',detail:'식수대 위치 안내'},
   {name:'만남의 광장',kind:'service',x:0,z:60,floor:'1F',detail:'일행과 만나기 좋은 약속 장소'},
   {name:'AED 안내',kind:'service',x:0,z:-17,floor:'1F',detail:'자동심장충격기 위치 안내'},
-  {name:'무슬림 기도실',kind:'service',x:0,z:-15,floor:'2F',detail:'기도실 위치 안내'}
+  {name:'무슬림 기도실',kind:'service',x:0,z:-15,floor:'2F',detail:'기도실 위치 안내'},
+  {name:'B1F 화장실',kind:'service',x:52,z:53,floor:'B1F',detail:'지하 1층 화장실 위치 안내'},
+  {name:'B1F 물품보관함',kind:'service',x:-52,z:53,floor:'B1F',detail:'지하 1층 물품보관함 위치 안내'},
+  {name:'2F 화장실',kind:'service',x:-54,z:52,floor:'2F',detail:'2층 화장실 위치 안내'},
+  {name:'2F 물품보관함',kind:'service',x:54,z:52,floor:'2F',detail:'2층 물품보관함 위치 안내'},
+  {name:'3F 화장실',kind:'service',x:-54,z:52,floor:'3F',detail:'3층 화장실 위치 안내'},
+  {name:'3F 음수대',kind:'service',x:54,z:52,floor:'3F',detail:'3층 음수대 위치 안내'},
+  {name:'4F 화장실',kind:'service',x:-54,z:52,floor:'4F',detail:'4층 화장실 위치 안내'},
+  {name:'4F 물품보관함',kind:'service',x:54,z:52,floor:'4F',detail:'4층 물품보관함 위치 안내'}
 ];
 serviceItems.forEach((it)=>facilityCatalog.push({id:'f'+facilityCatalog.length,floor:it.floor||'1F',...it}));
 
@@ -387,7 +395,7 @@ function signTexture(text,color){
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
 }
 function buildFacilityModel(f){
-  const g=new THREE.Group();g.position.set(f.x,floorHeight[f.floor]??floorHeight['1F'],f.z);scene.add(g);f.group=g;
+  const g=new THREE.Group();g.position.set(f.x,f.kind==='elevator'?floorHeight['B1F']:(floorHeight[f.floor]??floorHeight['1F']),f.z);scene.add(g);f.group=g;
   const color=facilityMaterials[f.kind]||facilityMaterials.service;
   if(f.kind==='ride'){
     cyl(g,0,.05,0,3.5,3.7,.45,mat(0x3c4b58));
@@ -430,8 +438,16 @@ function buildFacilityModel(f){
   }else if(f.kind==='elevator'){
     box(g,0,0,0,4,36,4,new THREE.MeshPhysicalMaterial({color:0xa5c4d2,transparent:true,opacity:.24,roughness:.2}));
     for(const x of [-2,2])box(g,x,0,0,.18,36,.18,mat(0xd8bb79));
-    const door=box(g,0,0,2.05,2.2,4,.12,mat(0x6e9bac));f.door=door;
-    box(g,2.7,1.2,2.1,.35,1.1,.25,mat(0xe7bd6b));
+    for(const floor of floorOrder){
+      const localY=floorHeight[floor]-floorHeight['B1F'];
+      box(g,0,localY,2.05,2.2,3.8,.12,mat(0x6e9bac));
+      box(g,0,localY+3.8,2.05,2.2,.18,.12,mat(0xd8bb79));
+    }
+    const cabin=new THREE.Group();g.add(cabin);
+    box(cabin,0,0,0,2,2.9,2,mat(0x92b9c7));
+    box(cabin,0,1.1,1.02,1.6,.3,.08,mat(0xe7bd6b));
+    cabin.position.set(0,8,0);f.cabin=cabin;
+    box(g,2.7,8.7,2.1,.35,1.1,.25,mat(0xe7bd6b));
   }else if(f.kind==='escalator'||f.kind==='stairs'){
     const base=box(g,0,0,0,5,.7,10,mat(0x445767));base.rotation.x=-.35;
     for(let j=0;j<9;j++){const step=box(g,0,.15+j*.27,-4.2+j*.95,4,.16,.85,mat(0x9cabb5));}
@@ -627,7 +643,7 @@ function facilityName(f){return f&&f.name?f.name:'시설'}
 function updateWalk(dt){
   if(currentRide||elevatorTransit||foodTransit||modal.classList.contains('open'))return;
   const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
-  const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize().negate();
+  const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize();
   let forwardInput=(keyState.w||keyState.arrowup||touchState.forward?1:0)-(keyState.s||keyState.arrowdown||touchState.back?1:0);
   let sideInput=(keyState.d||keyState.arrowright||touchState.right?1:0)-(keyState.a||keyState.arrowleft||touchState.left?1:0);
   const direction=forward.clone().multiplyScalar(forwardInput).add(right.multiplyScalar(sideInput));
