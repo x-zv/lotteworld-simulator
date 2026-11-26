@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lotte World Simulator — Early Build</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,Pretendard,"Noto Sans KR",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d}
+#scene{position:fixed;inset:0}
+.hud{position:fixed;z-index:2;pointer-events:none}
+.top{top:18px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-start}
+.brand,.panel{background:#101923d9;border:1px solid #ffffff20;backdrop-filter:blur(14px);border-radius:14px;box-shadow:0 12px 40px #0005}
+.brand{padding:12px 16px}.brand strong{display:block;font-size:14px;letter-spacing:.12em}.brand span{font-size:11px;color:#9eacbd}
+.panel{padding:12px 14px;color:#dce5ef;font-size:12px;line-height:1.7;max-width:245px}
+.bottom{bottom:18px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:end;gap:12px}
+.hint{padding:10px 13px;border-radius:12px;background:#101923d9;border:1px solid #ffffff20;color:#bdc9d7;font-size:11px}
+.controls{display:flex;gap:7px;pointer-events:auto}
+button{border:1px solid #ffffff26;background:#142333ed;color:#e7f0f8;padding:10px 13px;border-radius:10px;font:inherit;font-size:11px;cursor:pointer}
+button:hover{background:#24415a}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#10151d;color:#dce5ef;z-index:5;font-size:13px;transition:opacity .5s}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:1}
+.label{position:absolute;transform:translate(-50%,-50%);padding:5px 8px;border-radius:7px;background:#0d1724d9;border:1px solid #ffffff24;color:#eaf3fb;font-size:10px;white-space:nowrap}
+@media(max-width:650px){.top{left:10px;right:10px;top:10px}.panel{max-width:155px;font-size:10px}.bottom{left:10px;right:10px;bottom:10px}.hint{max-width:55%;font-size:10px}.brand{padding:9px 11px}}
+</style>
+</head>
+<body>
+<div id="scene"></div><div id="labels"></div>
+<div id="loading">롯데월드 기본 공간을 구성하는 중…</div>
+<div class="hud top">
+  <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span>EARLY BLOCKOUT · 3D WORLD</span></div>
+  <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<br><span style="color:#8fa5ba">세부 치수와 시설은 후속 단계에서 보정</span></div>
+</div>
+<div class="hud bottom">
+  <div class="hint">마우스 드래그: 회전 · 휠: 확대/축소 · 우클릭 드래그: 이동</div>
+  <div class="controls"><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
+</div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const mount=document.querySelector('#scene'), labelLayer=document.querySelector('#labels');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb8c9);scene.fog=new THREE.Fog(0x9eb8c9,170,420);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);camera.position.set(150,115,165);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;mount.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,12,0);controls.enableDamping=true;controls.maxPolarAngle=Math.PI*.49;controls.minDistance=35;controls.maxDistance=330;
+scene.add(new THREE.HemisphereLight(0xe4f3ff,0x53616c,2.0));
+const sun=new THREE.DirectionalLight(0xfff0d8,3.2);sun.position.set(-90,150,80);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-210;sun.shadow.camera.right=210;sun.shadow.camera.top=210;sun.shadow.camera.bottom=-210;scene.add(sun);
+const mats={grass:new THREE.MeshStandardMaterial({color:0x668b69,roughness:1}),concrete:new THREE.MeshStandardMaterial({color:0xb9b8b0,roughness:.9}),road:new THREE.MeshStandardMaterial({color:0x505963,roughness:1}),wall:new THREE.MeshStandardMaterial({color:0xe7e1d4,roughness:.8}),roof:new THREE.MeshStandardMaterial({color:0x536b7d,roughness:.65}),glass:new THREE.MeshPhysicalMaterial({color:0x8eb8c8,metalness:.18,roughness:.22,transparent:true,opacity:.48}),blue:new THREE.MeshStandardMaterial({color:0x426c8c,roughness:.55}),gold:new THREE.MeshStandardMaterial({color:0xd6ad63,metalness:.35,roughness:.4}),water:new THREE.MeshStandardMaterial({color:0x4e8fa7,roughness:.18,metalness:.2}),dark:new THREE.MeshStandardMaterial({color:0x35404b,roughness:.8})};
+function mat(color,roughness=.8){return new THREE.MeshStandardMaterial({color,roughness})}
+function box(parent,x,y,z,w,h,d,material){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function cyl(parent,x,y,z,r1,r2,h,material,segments=32){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),material);m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function sphere(parent,x,y,z,rx,ry,rz,material){const m=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),material);m.position.set(x,y,z);m.scale.set(rx,ry,rz);m.castShadow=true;parent.add(m);return m}
+function label(text,x,y,z){const el=document.createElement('div');el.className='label';el.textContent=text;labelLayer.appendChild(el);labels.push({el,p:new THREE.Vector3(x,y,z)})}
+const labels=[];
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(420,360),mats.grass);ground.rotation.x=-Math.PI/2;ground.position.y=-.25;ground.receiveShadow=true;scene.add(ground);
+// outer approach roads and landscaped public realm
+box(scene,0,.02,105,300,.18,24,mats.road);box(scene,-145,.03,20,24,.2,220,mats.road);
+box(scene,0,.12,77,190,.25,28,mats.concrete);
+for(let i=-8;i<=8;i++){cyl(scene,i*10,0,91,2.1,2.1,2.8,mat(0x806b50));sphere(scene,i*10,3.8,91,3.2,3.1,3.2,mat(0x477b55));}
+// large Adventure building: broad podium, curved glass facade, ribbed dome
+box(scene,0,1,20,150,18,92,mats.wall);
+box(scene,0,19,20,143,2,86,mats.roof);
+for(let x=-69;x<=69;x+=12){box(scene,x,2,-26,1.1,16,1.2,mats.gold);box(scene,x,2,66,1.1,16,1.2,mats.gold)}
+// dome elliptical half-shell using scaled sphere, clipped visually by podium
+const dome=sphere(scene,0,35,18,69,34,42,mats.glass);dome.scale.y=1;
+const domeWire=new THREE.Mesh(new THREE.WireframeGeometry(new THREE.SphereGeometry(1,24,12)),new THREE.LineBasicMaterial({color:0xc6d9df,transparent:true,opacity:.55}));domeWire.position.set(0,35,18);domeWire.scale.set(69,34,42);scene.add(domeWire);
+// entrance portico and towers
+box(scene,0,2,69,54,13,5,mats.blue);box(scene,0,15,69,60,2,7,mats.gold);
+for(const x of [-31,31]){box(scene,x,2,68,9,24,10,mats.wall);cyl(scene,x,26,68,5,4,5,mats.roof);sphere(scene,x,33,68,2.2,3.5,2.2,mats.gold)}
+// side wings / service blocks
+box(scene,-89,1,10,26,20,68,mats.wall);box(scene,89,1,10,26,20,68,mats.wall);
+box(scene,-88,21,10,28,2,70,mats.roof);box(scene,88,21,10,28,2,70,mats.roof);
+// lake around Magic Island
+const lake=new THREE.Mesh(new THREE.CircleGeometry(83,96),mats.water);lake.rotation.x=-Math.PI/2;lake.scale.set(1.18,.76,1);lake.position.set(0,.02,-112);lake.receiveShadow=true;scene.add(lake);
+// island land mass
+const island=new THREE.Mesh(new THREE.CylinderGeometry(57,64,3,64),mats.grass);island.position.set(0,1.2,-112);island.scale.z=.76;island.receiveShadow=true;island.castShadow=true;scene.add(island);
+// castle on island: keep, wings, turrets, spires
+box(scene,0,3,-119,28,24,19,mats.wall);box(scene,0,27,-119,34,4,24,mats.blue);
+for(const x of [-19,19]){box(scene,x,3,-119,12,17,15,mats.wall);cyl(scene,x,20,-119,6,6,5,mats.blue);const sp=new THREE.Mesh(new THREE.ConeGeometry(5,15,8),mats.roof);sp.position.set(x,32,-119);sp.castShadow=true;scene.add(sp)}
+box(scene,0,3,-101,10,15,8,mats.wall);const mainSpire=new THREE.Mesh(new THREE.ConeGeometry(6,18,8),mats.gold);mainSpire.position.set(0,23,-101);scene.add(mainSpire);
+for(let i=0;i<8;i++){const a=i*Math.PI/4;const x=Math.cos(a)*42,z=-112+Math.sin(a)*30;const t=new THREE.Group();t.position.set(x,2,z);scene.add(t);cyl(t,0,0,0,2.8,3.2,2.2,mats.dark);const s=new THREE.Mesh(new THREE.ConeGeometry(2.5,8,8),mats.gold);s.position.y=7;s.castShadow=true;t.add(s)}
+// perimeter paths
+const pathMat=mat(0xd5d0c3);const path=new THREE.Mesh(new THREE.TorusGeometry(69,3,8,100),pathMat);path.rotation.x=Math.PI/2;path.position.set(0,2.9,-112);path.scale.set(1.15,.75,1);scene.add(path);
+// landmark ride silhouettes around island (non-detailed placeholders)
+function coasterTrack(points,r=.75){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,180,r,8,false),mats.gold);mesh.castShadow=true;scene.add(mesh)}
+coasterTrack([[-65,5,-155],[-52,22,-166],[-35,10,-150],[-12,28,-164],[10,7,-152],[34,24,-160],[56,8,-140]],.85);
+for(let i=0;i<8;i++){const x=-55+i*15;box(scene,x,1,-155,1,13,1,mats.dark)}
+// gyro drop tower
+cyl(scene,57,2,-91,3,4,48,mats.dark);cyl(scene,57,48,-91,7,7,2,mats.gold);
+// ferris / observation wheel placeholder
+const wheel=new THREE.Mesh(new THREE.TorusGeometry(17,1.1,10,64),mats.blue);wheel.position.set(-58,23,-95);scene.add(wheel);for(let i=0;i<12;i++){const a=i*Math.PI/6;const x=-58+Math.cos(a)*17,y=23+Math.sin(a)*17;const spoke=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,34,8),mats.gold);spoke.position.set(x,y,-95);spoke.rotation.z=a;scene.add(spoke)}
+// urban context blocks outside park perimeter
+for(let i=0;i<7;i++){const x=-160+i*52;box(scene,x,0,-205,28,22+(i%3)*13,24,mat(i%2?0x9babb2:0xb9b6a9))}
+for(let i=0;i<5;i++){const x=125+i*13;box(scene,x,0,-30-i*36,9,30+(i%2)*16,13,mat(0x899ba6))}
+// entrance plaza paving bands
+for(let i=0;i<9;i++)box(scene,-72+i*18,.23,84,16,.08,1.1,mat(i%2?0xc7c4ba:0x9da7a8));
+label('LOTTE WORLD ADVENTURE',0,51,18);label('MAIN ENTRANCE',0,25,80);label('MAGIC ISLAND',0,8,-112);label('MAGIC CASTLE',0,45,-118);label('SEOKCHON LAKE',-80,4,-160);
+let showLabels=true;
+function updateLabels(){for(const l of labels){const v=l.p.clone().project(camera);l.el.style.display=showLabels&&v.z<1?'block':'none';l.el.style.left=((v.x*.5+.5)*innerWidth)+'px';l.el.style.top=((-v.y*.5+.5)*innerHeight)+'px'}}
+document.querySelector('#home').onclick=()=>{camera.position.set(150,115,165);controls.target.set(0,12,0);controls.update()};
+document.querySelector('#labelsBtn').onclick=()=>{showLabels=!showLabels;updateLabels()};
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);updateLabels()}animate();
+setTimeout(()=>{const l=document.querySelector('#loading');l.style.opacity=0;setTimeout(()=>l.remove(),550)},900);
+</script>
+</body></html>
