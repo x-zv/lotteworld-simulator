@@ -119,7 +119,7 @@ for(let i=-8;i<=8;i++){if(Math.abs(i)>3){cyl(scene,i*10,0,91,2.1,2.1,2.8,mat(0x8
 // large Adventure building: broad podium, curved glass facade, ribbed dome
 // Walkable stacked floor plates replace the previous solid blockout mass.
 const FLOOR_Y={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5};
-for(const y of Object.values(FLOOR_Y)) box(scene,0,y-.35,20,145,.7,86,mats.concrete);
+for(const y of Object.values(FLOOR_Y)) box(scene,0,y-.7,20,145,.7,86,mats.concrete);
 const facadeMat=new THREE.MeshPhysicalMaterial({color:0xb9d2dc,transparent:true,opacity:.24,roughness:.32,metalness:.08});
 box(scene,-73,-8,20,2,44,92,facadeMat);box(scene,73,-8,20,2,44,92,facadeMat);
 box(scene,0,-8,-25,146,44,2,facadeMat);
@@ -136,7 +136,7 @@ for(const x of [-31,31]){box(scene,x,2,68,9,24,10,mats.wall);cyl(scene,x,26,68,5
 box(scene,-89,1,10,26,20,68,mats.wall);box(scene,89,1,10,26,20,68,mats.wall);
 box(scene,-88,21,10,28,2,70,mats.roof);box(scene,88,21,10,28,2,70,mats.roof);
 // Walkable pedestrian bridge from Adventure to Magic Island.
-box(scene,0,.25,-48,12,.6,40,mats.concrete);
+box(scene,0,-.1,-48,12,.6,40,mats.concrete);
 box(scene,-6,.55,-48,.35,2,40,mats.gold);box(scene,6,.55,-48,.35,2,40,mats.gold);
 // lake around Magic Island
 const lake=new THREE.Mesh(new THREE.CircleGeometry(83,96),mats.water);lake.rotation.x=-Math.PI/2;lake.scale.set(1.18,.76,1);lake.position.set(0,.02,-112);lake.receiveShadow=true;scene.add(lake);
@@ -309,7 +309,7 @@ document.querySelector('#paradeNow').addEventListener('click',startSeasonalParad
 // blockout positions and are intended to be refined against a measured map.
 // ---------------------------------------------------------------------------
 const floorOrder=['B1F','1F','2F','3F','4F'];
-const floorHeight={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5};
+const floorHeight={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5,'매직아일랜드':2.7};
 const facilityCatalog=[];
 function addItems(floor,kind,names,extra={}){names.forEach((name,i)=>facilityCatalog.push({id:'f'+facilityCatalog.length,name,floor,kind,...extra}))}
 addItems('B1F','ride',['드림보트','4D 슈팅씨어터','와일드밸리','와일드정글','와일드윙']);
@@ -495,7 +495,7 @@ function currentFloor(){
   return best;
 }
 function nearestInteractable(){
-  if(currentRide||elevatorTransit||modal.classList.contains('open'))return null;
+  if(currentRide||elevatorTransit||foodTransit||modal.classList.contains('open'))return null;
   let nearest=null,best=9.5;
   for(const f of facilities){
     if(['elevator','escalator','stairs'].includes(f.kind)&&f.multi){
@@ -654,11 +654,13 @@ function updateWalk(dt){
   }
   const onIsland=player.position.z<=-67;
   if(onIsland){
+    player.position.y=floorHeight['매직아일랜드'];
     player.position.x=THREE.MathUtils.clamp(player.position.x,-62,62);
     player.position.z=THREE.MathUtils.clamp(player.position.z,-166,-67);
     const ellipse=(player.position.x/63)**2+((player.position.z+112)/49)**2;
     if(ellipse>1.12){player.position.z=-66.5;player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5)}
   }else{
+    if(player.position.y===floorHeight['매직아일랜드'])player.position.y=floorHeight['1F'];
     player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
     player.position.z=THREE.MathUtils.clamp(player.position.z,-29,87);
     if(currentFloor()!=='1F')player.position.z=THREE.MathUtils.clamp(player.position.z,-23,63);
