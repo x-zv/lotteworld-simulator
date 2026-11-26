@@ -89,6 +89,14 @@ button:hover{background:#24415a}
   </div>
 </div>
 <div id="toast"></div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 <script type="module">
 async function importWithTimeout(url, timeoutMs=9000){
   return Promise.race([
@@ -96,21 +104,9 @@ async function importWithTimeout(url, timeoutMs=9000){
     new Promise((_,reject)=>setTimeout(()=>reject(new Error('라이브러리 응답 시간 초과: '+url)),timeoutMs))
   ]);
 }
-async function loadThreeModules(){
-  const cdns=[
-    'https://cdn.jsdelivr.net/npm/three@0.160.0',
-    'https://unpkg.com/three@0.160.0'
-  ];
-  const attempts=cdns.map(async root=>{
-    const [THREE, orbit]=await Promise.all([
-      importWithTimeout(root+'/build/three.module.js'),
-      importWithTimeout(root+'/examples/jsm/controls/OrbitControls.js')
-    ]);
-    return {THREE,OrbitControls:orbit.OrbitControls};
-  });
-  return Promise.any(attempts);
-}
-const {THREE,OrbitControls}=await loadThreeModules();
+const THREE=await importWithTimeout('three');
+const orbitModule=await importWithTimeout('three/addons/controls/OrbitControls.js');
+const OrbitControls=orbitModule.OrbitControls;
 try {
 const mount=document.querySelector('#scene'), labelLayer=document.querySelector('#labels');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb8c9);scene.fog=new THREE.Fog(0x9eb8c9,170,420);
