@@ -29,7 +29,7 @@ button:hover{background:#24415a}
 <div id="loading">롯데월드 기본 공간을 구성하는 중…</div>
 <div class="hud top">
   <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span>EARLY BLOCKOUT · 3D WORLD</span></div>
-  <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<div id="paradeStatus" style="margin-top:9px;padding-top:8px;border-top:1px solid #ffffff20;color:#fff1cf">겨울 시즌 · 해피 크리스마스 퍼레이드<br>다음 퍼레이드까지 10:00</div><span style="color:#8fa5ba">가상 시뮬레이션은 10분 간격으로 진행</span></div>
+  <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<div id="paradeStatus" style="margin-top:9px;padding-top:8px;border-top:1px solid #ffffff20;color:#fff1cf">계절별 퍼레이드<br>시즌에 맞는 테마가 자동 선택됩니다</div><span style="color:#8fa5ba">가상 시뮬레이션은 10분 간격으로 진행</span></div>
 </div>
 <div class="hud bottom">
   <div class="hint">마우스 드래그: 회전 · 휠: 확대/축소 · 우클릭 드래그: 이동</div>
@@ -106,9 +106,9 @@ const nowDate = new Date();
 const month = nowDate.getMonth() + 1;
 const seasons = {
   winter: {title:'해피 크리스마스 퍼레이드', subtitle:'스위트 윈터 어드벤처', deck:0xd9e9f3, trim:0xd8ad65, accent:0x8f2636},
-  spring: {title:'봄꽃 퍼레이드', subtitle:'봄 시즌 테마', deck:0xe9b6c8, trim:0xffe6a8, accent:0x78a96b},
+  spring: {title:'Let\'s Play! 로티스 어드벤처 퍼레이드', subtitle:'봄 시즌 테마', deck:0xe9b6c8, trim:0xffe6a8, accent:0x78a96b},
   summer: {title:'썸머 페스티벌 퍼레이드', subtitle:'여름 시즌 테마', deck:0x54a8c7, trim:0xffd166, accent:0x287a9a},
-  autumn: {title:'다크 판타지 퍼레이드', subtitle:'가을 시즌 테마', deck:0x553d59, trim:0xe6a24e, accent:0x9c4b37}
+  autumn: {title:'Dark Fantasy Festival', subtitle:'가을 시즌 테마', deck:0x553d59, trim:0xe6a24e, accent:0x9c4b37}
 };
 const seasonKey = (month===11 || month===12 || month===1 || month===2) ? 'winter'
   : (month>=3 && month<=5) ? 'spring' : (month>=6 && month<=8) ? 'summer' : 'autumn';
