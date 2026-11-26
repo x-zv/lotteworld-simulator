@@ -74,6 +74,21 @@ button:hover{background:#24415a}
   <div class="hint">WASD 이동 · 마우스 드래그 시점 회전 · E 이용하기</div>
   <div class="controls"><button id="paradeNow">퍼레이드 미리보기</button><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
 </div>
+<div id="interactionPrompt" aria-live="polite">주변 시설에 가까이 가면 이용 안내가 표시됩니다.</div>
+<div id="mobilePad" aria-label="이동 조작">
+  <button data-move="forward" aria-label="앞으로">▲</button>
+  <button data-move="left" aria-label="왼쪽">◀</button>
+  <button data-move="back" aria-label="뒤로">▼</button>
+  <button data-move="right" aria-label="오른쪽">▶</button>
+</div>
+<button id="mobileAction">가까이 이동하세요</button>
+<div id="simModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modalCard">
+    <button id="modalClose" class="modalClose" aria-label="닫기">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+<div id="toast"></div>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
 </script>
@@ -102,9 +117,15 @@ box(scene,0,.02,105,300,.18,24,mats.road);box(scene,-145,.03,20,24,.2,220,mats.r
 box(scene,0,.12,77,190,.25,28,mats.concrete);
 for(let i=-8;i<=8;i++){if(Math.abs(i)>3){cyl(scene,i*10,0,91,2.1,2.1,2.8,mat(0x806b50));sphere(scene,i*10,3.8,91,3.2,3.1,3.2,mat(0x477b55));}}
 // large Adventure building: broad podium, curved glass facade, ribbed dome
-box(scene,0,1,20,150,18,92,mats.wall);
-box(scene,0,19,20,143,2,86,mats.roof);
-for(let x=-69;x<=69;x+=12){box(scene,x,2,-26,1.1,16,1.2,mats.gold);box(scene,x,2,66,1.1,16,1.2,mats.gold)}
+// Walkable stacked floor plates replace the previous solid blockout mass.
+const FLOOR_Y={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5};
+for(const y of Object.values(FLOOR_Y)) box(scene,0,y-.35,20,145,.7,86,mats.concrete);
+const facadeMat=new THREE.MeshPhysicalMaterial({color:0xb9d2dc,transparent:true,opacity:.24,roughness:.32,metalness:.08});
+box(scene,-73,-8,20,2,44,92,facadeMat);box(scene,73,-8,20,2,44,92,facadeMat);
+box(scene,0,-8,-25,146,44,2,facadeMat);
+box(scene,-48,-8,66,50,44,2,facadeMat);box(scene,48,-8,66,50,44,2,facadeMat);
+for(const y of [8.5,17.5,26.5]){box(scene,-73,y,-25,2,.35,92,mats.gold);box(scene,73,y,-25,2,.35,92,mats.gold);}
+for(let x=-69;x<=69;x+=12){box(scene,x,2,-26,1.1,16,1.2,mats.gold)}
 // dome elliptical half-shell using scaled sphere, clipped visually by podium
 const dome=sphere(scene,0,35,18,69,34,42,mats.glass);dome.scale.y=1;
 const domeWire=new THREE.Mesh(new THREE.WireframeGeometry(new THREE.SphereGeometry(1,24,12)),new THREE.LineBasicMaterial({color:0xc6d9df,transparent:true,opacity:.55}));domeWire.position.set(0,35,18);domeWire.scale.set(69,34,42);scene.add(domeWire);
@@ -114,6 +135,9 @@ for(const x of [-31,31]){box(scene,x,2,68,9,24,10,mats.wall);cyl(scene,x,26,68,5
 // side wings / service blocks
 box(scene,-89,1,10,26,20,68,mats.wall);box(scene,89,1,10,26,20,68,mats.wall);
 box(scene,-88,21,10,28,2,70,mats.roof);box(scene,88,21,10,28,2,70,mats.roof);
+// Walkable pedestrian bridge from Adventure to Magic Island.
+box(scene,0,.25,-48,12,.6,40,mats.concrete);
+box(scene,-6,.55,-48,.35,2,40,mats.gold);box(scene,6,.55,-48,.35,2,40,mats.gold);
 // lake around Magic Island
 const lake=new THREE.Mesh(new THREE.CircleGeometry(83,96),mats.water);lake.rotation.x=-Math.PI/2;lake.scale.set(1.18,.76,1);lake.position.set(0,.02,-112);lake.receiveShadow=true;scene.add(lake);
 // island land mass
