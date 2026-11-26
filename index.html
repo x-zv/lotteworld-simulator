@@ -25,6 +25,42 @@ button:hover{background:#24415a}
 #paradeStatus .live{color:#b9f2cf;font-weight:700}
 @media(max-width:650px){.controls{gap:4px}.controls button{padding:8px 9px;font-size:10px}}
 @media(max-width:650px){.top{left:10px;right:10px;top:10px}.panel{max-width:155px;font-size:10px}.bottom{left:10px;right:10px;bottom:10px}.hint{max-width:55%;font-size:10px}.brand{padding:9px 11px}}
+
+#interactionPrompt{position:fixed;z-index:6;left:50%;bottom:82px;transform:translateX(-50%);padding:11px 16px;border-radius:13px;background:#101923e8;border:1px solid #ffffff2a;color:#eff6fd;font-size:12px;text-align:center;min-width:230px;max-width:min(92vw,480px);pointer-events:none;box-shadow:0 10px 30px #0005}
+#mobileAction{display:none;position:fixed;z-index:8;right:18px;bottom:24px;border-radius:999px;min-width:112px;min-height:54px;background:#f1c66e;color:#18202a;font-weight:800;box-shadow:0 8px 28px #0005}
+#mobilePad{display:none;position:fixed;z-index:8;left:16px;bottom:18px;width:142px;height:142px;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5px;touch-action:none}
+#mobilePad button{padding:0;border-radius:13px;background:#101923d9;border:1px solid #ffffff45;font-size:16px;touch-action:none;user-select:none}
+#mobilePad button[data-move=forward]{grid-column:2;grid-row:1}
+#mobilePad button[data-move=left]{grid-column:1;grid-row:2}
+#mobilePad button[data-move=back]{grid-column:2;grid-row:3}
+#mobilePad button[data-move=right]{grid-column:3;grid-row:2}
+#simModal{display:none;position:fixed;inset:0;z-index:30;background:#030912b8;backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:18px}
+#simModal.open{display:flex}
+.modalCard{position:relative;width:min(520px,100%);max-height:82vh;overflow:auto;border:1px solid #ffffff25;border-radius:20px;background:#111d2a;color:#edf4fb;padding:25px;box-shadow:0 24px 80px #0009}
+.modalClose{position:absolute;right:12px;top:12px;border-radius:50%;width:36px;height:36px;padding:0;font-size:15px}
+.modalEyebrow{color:#e6bd72;font-size:11px;letter-spacing:.12em;font-weight:800}
+.modalCard h2{margin:8px 36px 8px 0;font-size:22px}
+.modalCard p{color:#aebdca;line-height:1.65;font-size:13px}
+.modalActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.modalActions button,.choiceButton{border-radius:11px;padding:11px 14px;background:#203950;border:1px solid #ffffff24;color:#f1f7fb;cursor:pointer}
+.modalActions button.primary{background:#e7bd6b;color:#1a2430;font-weight:800}
+.choiceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.choiceButton{text-align:left;display:flex;flex-direction:column;gap:4px}
+.choiceButton small{color:#aebdca}
+#toast{position:fixed;z-index:40;left:50%;top:80px;transform:translateX(-50%);background:#122438;color:#f4f8fb;border:1px solid #ffffff30;border-radius:999px;padding:10px 16px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+@media(max-width:700px),(pointer:coarse){
+  #mobilePad{display:grid}
+  #mobileAction{display:block}
+  .bottom{bottom:8px;left:165px;right:10px;justify-content:flex-end}
+  .bottom .hint{display:none}
+  .controls button{font-size:9px;padding:8px}
+  .top{left:8px;right:8px;top:8px}
+  .panel{max-width:165px;font-size:10px;padding:9px}
+  .brand{padding:9px 11px}
+  #interactionPrompt{bottom:175px;font-size:11px}
+  .modalCard{padding:21px 17px}
+}
 </style>
 </head>
 <body>
@@ -35,7 +71,7 @@ button:hover{background:#24415a}
   <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<div id="paradeStatus" style="margin-top:9px;padding-top:8px;border-top:1px solid #ffffff20;color:#fff1cf">계절별 퍼레이드<br>시즌에 맞는 테마가 자동 선택됩니다</div><span style="color:#8fa5ba">가상 시뮬레이션은 10분 간격으로 진행</span></div>
 </div>
 <div class="hud bottom">
-  <div class="hint">마우스 드래그: 회전 · 휠: 확대/축소 · 우클릭 드래그: 이동</div>
+  <div class="hint">WASD 이동 · 마우스 드래그 시점 회전 · E 이용하기</div>
   <div class="controls"><button id="paradeNow">퍼레이드 미리보기</button><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
 </div>
 <script type="importmap">
@@ -46,9 +82,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const mount=document.querySelector('#scene'), labelLayer=document.querySelector('#labels');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb8c9);scene.fog=new THREE.Fog(0x9eb8c9,170,420);
-const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);camera.position.set(150,115,165);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);camera.position.set(0,8,97);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;mount.appendChild(renderer.domElement);
-const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,12,0);controls.enableDamping=true;controls.maxPolarAngle=Math.PI*.49;controls.minDistance=35;controls.maxDistance=330;
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,2,78);controls.enableDamping=true;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.49;controls.minDistance=5;controls.maxDistance=42;
 scene.add(new THREE.HemisphereLight(0xe4f3ff,0x53616c,2.0));
 const sun=new THREE.DirectionalLight(0xfff0d8,3.2);sun.position.set(-90,150,80);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-210;sun.shadow.camera.right=210;sun.shadow.camera.top=210;sun.shadow.camera.bottom=-210;scene.add(sun);
 const mats={grass:new THREE.MeshStandardMaterial({color:0x668b69,roughness:1}),concrete:new THREE.MeshStandardMaterial({color:0xb9b8b0,roughness:.9}),road:new THREE.MeshStandardMaterial({color:0x505963,roughness:1}),wall:new THREE.MeshStandardMaterial({color:0xe7e1d4,roughness:.8}),roof:new THREE.MeshStandardMaterial({color:0x536b7d,roughness:.65}),glass:new THREE.MeshPhysicalMaterial({color:0x8eb8c8,metalness:.18,roughness:.22,transparent:true,opacity:.48}),blue:new THREE.MeshStandardMaterial({color:0x426c8c,roughness:.55}),gold:new THREE.MeshStandardMaterial({color:0xd6ad63,metalness:.35,roughness:.4}),water:new THREE.MeshStandardMaterial({color:0x4e8fa7,roughness:.18,metalness:.2}),dark:new THREE.MeshStandardMaterial({color:0x35404b,roughness:.8})};
@@ -58,11 +94,13 @@ function cyl(parent,x,y,z,r1,r2,h,material,segments=32){const m=new THREE.Mesh(n
 function sphere(parent,x,y,z,rx,ry,rz,material){const m=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),material);m.position.set(x,y,z);m.scale.set(rx,ry,rz);m.castShadow=true;parent.add(m);return m}
 function label(text,x,y,z){const el=document.createElement('div');el.className='label';el.textContent=text;labelLayer.appendChild(el);labels.push({el,p:new THREE.Vector3(x,y,z)})}
 const labels=[];
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(420,360),mats.grass);ground.rotation.x=-Math.PI/2;ground.position.y=-.25;ground.receiveShadow=true;scene.add(ground);
+const terrain=new THREE.Group();scene.add(terrain);
+function terrainRect(w,d,x,z){const g=new THREE.Mesh(new THREE.PlaneGeometry(w,d),mats.grass);g.rotation.x=-Math.PI/2;g.position.set(x,-.25,z);g.receiveShadow=true;terrain.add(g)}
+terrainRect(135,360,-142.5,0);terrainRect(135,360,142.5,0);terrainRect(150,110,0,125);terrainRect(150,150,0,-105);
 // outer approach roads and landscaped public realm
 box(scene,0,.02,105,300,.18,24,mats.road);box(scene,-145,.03,20,24,.2,220,mats.road);
 box(scene,0,.12,77,190,.25,28,mats.concrete);
-for(let i=-8;i<=8;i++){cyl(scene,i*10,0,91,2.1,2.1,2.8,mat(0x806b50));sphere(scene,i*10,3.8,91,3.2,3.1,3.2,mat(0x477b55));}
+for(let i=-8;i<=8;i++){if(Math.abs(i)>3){cyl(scene,i*10,0,91,2.1,2.1,2.8,mat(0x806b50));sphere(scene,i*10,3.8,91,3.2,3.1,3.2,mat(0x477b55));}}
 // large Adventure building: broad podium, curved glass facade, ribbed dome
 box(scene,0,1,20,150,18,92,mats.wall);
 box(scene,0,19,20,143,2,86,mats.roof);
@@ -71,7 +109,7 @@ for(let x=-69;x<=69;x+=12){box(scene,x,2,-26,1.1,16,1.2,mats.gold);box(scene,x,2
 const dome=sphere(scene,0,35,18,69,34,42,mats.glass);dome.scale.y=1;
 const domeWire=new THREE.Mesh(new THREE.WireframeGeometry(new THREE.SphereGeometry(1,24,12)),new THREE.LineBasicMaterial({color:0xc6d9df,transparent:true,opacity:.55}));domeWire.position.set(0,35,18);domeWire.scale.set(69,34,42);scene.add(domeWire);
 // entrance portico and towers
-box(scene,0,2,69,54,13,5,mats.blue);box(scene,0,15,69,60,2,7,mats.gold);
+box(scene,-25,2,69,4,13,5,mats.blue);box(scene,25,2,69,4,13,5,mats.blue);box(scene,0,14,69,54,2,7,mats.gold);
 for(const x of [-31,31]){box(scene,x,2,68,9,24,10,mats.wall);cyl(scene,x,26,68,5,4,5,mats.roof);sphere(scene,x,33,68,2.2,3.5,2.2,mats.gold)}
 // side wings / service blocks
 box(scene,-89,1,10,26,20,68,mats.wall);box(scene,89,1,10,26,20,68,mats.wall);
@@ -242,10 +280,362 @@ function updateParade(now){
 }
 document.querySelector('#paradeNow').addEventListener('click',startSeasonalParade);
 
-document.querySelector('#home').onclick=()=>{camera.position.set(150,115,165);controls.target.set(0,12,0);controls.update()};
+// ---------------------------------------------------------------------------
+// Walkable park + facility interactions. All coordinates are approximate
+// blockout positions and are intended to be refined against a measured map.
+// ---------------------------------------------------------------------------
+const floorOrder=['B1F','1F','2F','3F','4F'];
+const floorHeight={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5};
+const facilityCatalog=[];
+function addItems(floor,kind,names,extra={}){names.forEach((name,i)=>facilityCatalog.push({id:'f'+facilityCatalog.length,name,floor,kind,...extra}))}
+addItems('B1F','ride',['드림보트','4D 슈팅씨어터','와일드밸리','와일드정글','와일드윙']);
+addItems('B1F','restaurant',['오거스 팩토리','츄로빅','페어리테일 피자','101번지 남산돈까스','유브유부']);
+addItems('B1F','shop',['환타지 기프트샵','픽시매직','샤론캣 프리미엄 라운지']);
+addItems('1F','ride',['신밧드의 모험','스페인 해적선','후룸라이드','회전바구니','로티트레인','배틀그라운드','플라이벤처','회전목마','황야의 무법자','키즈토리아','드래곤 와일드 슈팅','어린이 범퍼카','햇님달님','점핑피쉬','언더씨킹덤','유레카','스윙팡팡','매직붕붕카','어린이동화극장','카트라이더 레이싱 월드']);
+addItems('1F','restaurant',['스쿨푸드','아라비안 바자 푸드','롯데리아','카페·스낵 코너']);
+addItems('1F','shop',['아라비안 바자','포토스트리트','샤론캣 드레스','캐릭터 기프트샵']);
+addItems('2F','ride',['후렌치레볼루션','범퍼카']);
+addItems('2F','restaurant',['퀴즈노스','빈슈트루델','앤티앤스 프레즐','델리본','오이씨푸드']);
+addItems('2F','shop',['위니비니','게임빌리지']);
+addItems('3F','ride',['콩X고질라 더 라이드','월드모노레일']);
+addItems('3F','restaurant',['공차','김피라','상하이','델키스']);
+addItems('3F','shop',['타로카드','게임빌리지']);
+addItems('4F','ride',['풍선비행','파라오의 분노','어크로스 다크']);
+addItems('4F','restaurant',['요거트월드','라라코스트','부창제과','아이스팩토리','뉴욕핫도그']);
+addItems('4F','shop',['헬로키티 숍','전망대 게임장','파라오짱 게임즈']);
+addItems('매직아일랜드','ride',['아트란티스','자이로스윙','쁘띠빵빵','자이로드롭','환타지드림','혜성특급','자이로스핀','스톤익스프레스','아르카나라이드','에오스타워']);
+addItems('매직아일랜드','restaurant',['레이크뷰 다이닝','매직아일랜드 스낵','아일랜드 카페']);
+addItems('매직아일랜드','shop',['매직캐슬 트레져스']);
+
+const serviceItems=[
+  {name:'엘리베이터 북측',kind:'elevator',x:-62,z:-12,multi:true},
+  {name:'엘리베이터 남측',kind:'elevator',x:62,z:48,multi:true},
+  {name:'에스컬레이터 서측',kind:'escalator',x:-56,z:30,floor:'1F'},
+  {name:'에스컬레이터 동측',kind:'escalator',x:56,z:-4,floor:'1F'},
+  {name:'계단 서측',kind:'stairs',x:-64,z:3,floor:'1F'},
+  {name:'계단 동측',kind:'stairs',x:64,z:27,floor:'1F'},
+  {name:'화장실 북측',kind:'service',x:-62,z:-22,floor:'1F',detail:'화장실 위치 안내'},
+  {name:'화장실 남측',kind:'service',x:62,z:57,floor:'1F',detail:'화장실 위치 안내'},
+  {name:'의무실',kind:'service',x:-54,z:52,floor:'1F',detail:'도움이 필요할 때 직원에게 안내를 요청할 수 있는 공간'},
+  {name:'미아보호소',kind:'service',x:52,z:52,floor:'1F',detail:'보호자와 떨어졌을 때 직원의 도움을 받는 공간'},
+  {name:'분실물 보관소',kind:'service',x:-52,z:42,floor:'1F',detail:'분실물 문의 및 접수'},
+  {name:'손님상담실',kind:'service',x:52,z:40,floor:'1F',detail:'이용 안내 및 고객 상담'},
+  {name:'베이비 라운지',kind:'service',x:-54,z:18,floor:'1F',detail:'영유아 동반 고객을 위한 편의 공간'},
+  {name:'물품보관함',kind:'service',x:54,z:16,floor:'1F',detail:'짐 보관 위치 안내'},
+  {name:'휠체어·유모차 대여',kind:'service',x:-53,z:4,floor:'1F',detail:'대여 서비스 위치 안내'},
+  {name:'현금인출기',kind:'service',x:52,z:4,floor:'1F',detail:'현금인출기 위치 안내'},
+  {name:'음수대',kind:'service',x:0,z:54,floor:'1F',detail:'식수대 위치 안내'},
+  {name:'만남의 광장',kind:'service',x:0,z:60,floor:'1F',detail:'일행과 만나기 좋은 약속 장소'},
+  {name:'AED 안내',kind:'service',x:0,z:-17,floor:'1F',detail:'자동심장충격기 위치 안내'},
+  {name:'무슬림 기도실',kind:'service',x:0,z:-15,floor:'2F',detail:'기도실 위치 안내'}
+];
+serviceItems.forEach((it)=>facilityCatalog.push({id:'f'+facilityCatalog.length,floor:it.floor||'1F',...it}));
+
+const floorItems={};
+for(const f of ['B1F','1F','2F','3F','4F']) floorItems[f]=facilityCatalog.filter(it=>it.floor===f && it.kind!=='elevator' && it.kind!=='escalator' && it.kind!=='stairs');
+function gridPosition(index,count){
+  const cols=count>24?7:count>14?6:count>8?4:3;
+  const rows=Math.ceil(count/cols);
+  const col=index%cols,row=Math.floor(index/cols);
+  return {x:-48+col*(96/Math.max(1,cols-1)),z:-14+row*(66/Math.max(1,rows-1))};
+}
+for(const floor of Object.keys(floorItems)){
+  const arr=floorItems[floor];
+  arr.forEach((it,i)=>{const p=gridPosition(i,arr.length);it.x=p.x;it.z=p.z;});
+}
+const islandItems=facilityCatalog.filter(it=>it.floor==='매직아일랜드');
+islandItems.forEach((it,i)=>{
+  const a=(-Math.PI*.83)+(i/(islandItems.length))*Math.PI*1.66;
+  it.x=Math.cos(a)*44;it.z=-112+Math.sin(a)*31;
+});
+const facilities=[];
+const facilityMaterials={
+  ride:mat(0x427b9e,.55),restaurant:mat(0xc98748,.65),shop:mat(0x8d6aa8,.6),service:mat(0x4c8b83,.7),
+  elevator:mat(0x8fc0ce,.25),escalator:mat(0x667b8c,.6),stairs:mat(0x7c8d9b,.7)
+};
+function signTexture(text,color){
+  const canvas=document.createElement('canvas');canvas.width=640;canvas.height=150;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#111d2b';ctx.fillRect(0,0,640,150);
+  ctx.fillStyle=color;ctx.fillRect(0,0,12,150);
+  ctx.fillStyle='#f3f6f7';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  let t=text;if(t.length>16)t=t.slice(0,15)+'…';ctx.fillText(t,330,76,580);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
+}
+function buildFacilityModel(f){
+  const g=new THREE.Group();g.position.set(f.x,floorHeight[f.floor]??floorHeight['1F'],f.z);scene.add(g);f.group=g;
+  const color=facilityMaterials[f.kind]||facilityMaterials.service;
+  if(f.kind==='ride'){
+    cyl(g,0,.05,0,3.5,3.7,.45,mat(0x3c4b58));
+    box(g,0,.5,0,4.8,.55,4.8,color);
+    if(/회전목마/.test(f.name)){
+      cyl(g,1.0,1.05,0,2.3,2.3,.3,facilityMaterials.restaurant);
+      cyl(g,1.0,1.2,0,.35,.35,4,facilityMaterials.elevator);
+      const canopy=new THREE.Mesh(new THREE.ConeGeometry(2.8,1.5,12),mat(0xd8b65e));canopy.position.set(1,4.2,0);g.add(canopy);
+      for(let j=0;j<8;j++){const a=j*Math.PI/4;cyl(g,1+Math.cos(a)*1.7,1.5,Math.sin(a)*1.7,.12,.12,2.2,mat(0xf4e8c8));}
+    }else if(/자이로드롭|에오스타워/.test(f.name)){
+      cyl(g,0,.9,0,.65,.9,8,color);cyl(g,8.8,0,0,2,2,.4,mat(0xd9b65e));
+    }else if(/후렌치|아트란티스|혜성특급|후룸|월드모노레일|카트라이더/.test(f.name)){
+      const pts=[[-5,1,-3],[-4,5,-2],[-2,2,0],[0,7,1],[2,2,3],[4,5,2],[5,1,0]].map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+      const curve=new THREE.CatmullRomCurve3(pts);
+      const track=new THREE.Mesh(new THREE.TubeGeometry(curve,80,.22,8,false),mat(0xe4b45e));g.add(track);
+      for(let j=0;j<5;j++)cyl(g,-4+j*2,.6,0,.12,.12,3,mat(0x65717c));
+    }else if(/해적선|스윙|자이로|스톤익스프레스/.test(f.name)){
+      cyl(g,0,.9,0,.45,.45,5,color);
+      const arm=box(g,0,5.2,0,6,.35,.55,mat(0xe3b85f));
+      const boat=box(g,0,3,2.4,3,.65,1.4,mat(0x9d4e48));f.motionPart=boat;
+    }else if(/보트|드림|와일드밸리|신밧드|스톤/.test(f.name)){
+      box(g,-1,.9,0,2,.65,4,mat(0x3b8ca7));box(g,-1,1.55,0,2,.25,4,mat(0xe5c875));
+      const waterMat=new THREE.MeshStandardMaterial({color:0x4b9ab3,roughness:.2,transparent:true,opacity:.8});
+      box(g,0,.2,0,6,.15,5,waterMat);
+    }else if(/비행|풍선|플라이/.test(f.name)){
+      sphere(g,0,4,0,1.7,2.1,1.7,mat(0xd9a75d));box(g,0,1.5,0,2,.8,2,mat(0x577b8c));
+    }else{
+      cyl(g,0,1,0,1.4,1.8,2.2,mat(0x5d8193));
+      for(let j=0;j<4;j++){const a=j*Math.PI/2;box(g,Math.cos(a)*2,1.2,Math.sin(a)*2,.7,1.5,.7,mat(0xe0b76c));}
+    }
+    const cart=box(g,0,1.2,0,1.7,.65,1.5,mat(0x9f4541));cart.visible=false;f.cart=cart;
+  }else if(f.kind==='restaurant'){
+    box(g,0,.2,0,6,3.3,4,color);box(g,0,3.7,0,6.5,.35,4.5,mat(0xe8c27d));
+    box(g,0,2.5,2.1,2.6,1.5,.15,mat(0x1b2834));
+    for(let j=0;j<2;j++){const z=-3+j*1.5;const table=cyl(g,-5,.2,z,.65,.65,.3,mat(0xd6ad63));cyl(g,-5,.5,z,.16,.16,1.0,mat(0x465b68));}
+    box(g,0,5.3,-1.7,5,.3,.18,mat(0xf4ddaa));
+  }else if(f.kind==='shop'){
+    box(g,0,.2,0,5.6,3,4,color);box(g,0,3.4,0,6,.3,4.3,mat(0xd9b76a));
+    for(let j=0;j<3;j++)box(g,-1.8+j*1.8,1.1,2.05,1.2,1.7,.12,mat(0x9ec2cf));
+  }else if(f.kind==='elevator'){
+    box(g,0,0,0,4,36,4,new THREE.MeshPhysicalMaterial({color:0xa5c4d2,transparent:true,opacity:.24,roughness:.2}));
+    for(const x of [-2,2])box(g,x,0,0,.18,36,.18,mat(0xd8bb79));
+    const door=box(g,0,0,2.05,2.2,4,.12,mat(0x6e9bac));f.door=door;
+    box(g,2.7,1.2,2.1,.35,1.1,.25,mat(0xe7bd6b));
+  }else if(f.kind==='escalator'||f.kind==='stairs'){
+    const base=box(g,0,0,0,5,.7,10,mat(0x445767));base.rotation.x=-.35;
+    for(let j=0;j<9;j++){const step=box(g,0,.15+j*.27,-4.2+j*.95,4,.16,.85,mat(0x9cabb5));}
+    box(g,-2,1,0,.14,3,10,mat(0xe0bb70));box(g,2,1,0,.14,3,10,mat(0xe0bb70));
+  }else{
+    box(g,0,.2,0,4,2.6,3.5,color);
+    box(g,0,3,0,4.4,.3,3.8,mat(0xe4c176));
+    box(g,0,1.7,1.85,2.5,1.2,.12,mat(0x1d2c3a));
+  }
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(8.5,1.9),new THREE.MeshBasicMaterial({map:signTexture(f.name, f.kind==='ride'?'#78c3e9':f.kind==='restaurant'?'#f1b977':f.kind==='shop'?'#c9a1ed':'#86d5c0'),side:THREE.DoubleSide,transparent:true}));
+  sign.position.set(0,7.3,2.8);g.add(sign);
+  return g;
+}
+facilityCatalog.forEach(f=>{buildFacilityModel(f);facilities.push(f)});
+
+// A single walkable avatar. Orbit controls become a third-person follow camera.
+const player=new THREE.Group();scene.add(player);
+const playerMat=mat(0x3c94b9,.6),skinMat=mat(0xf0cba9,.75);
+cyl(player,0,.15,0,.62,.68,1.15,playerMat,20);
+sphere(player,0,1.65,0,.48,.48,.48,skinMat);
+box(player,0,.8,.48,.65,.18,.2,mat(0xe8be73));
+player.position.set(0,floorHeight['1F'],79);
+const spawnPosition=player.position.clone();
+controls.target.set(player.position.x,player.position.y+1.25,player.position.z);
+camera.position.set(0,player.position.y+8,player.position.z+19);
+controls.update();
+
+const keyState={};const touchState={forward:false,back:false,left:false,right:false};
+let activeFacility=null,currentRide=null,elevatorTransit=null,foodTransit=null,toastTimer=null;
+const prompt=document.querySelector('#interactionPrompt');
+const actionButton=document.querySelector('#mobileAction');
+const modal=document.querySelector('#simModal'),modalBody=document.querySelector('#modalBody');
+function showToast(message){
+  const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+function escHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function openModal(content){modalBody.innerHTML=content;modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+function closeModal(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+document.querySelector('#modalClose').addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+function currentFloor(){
+  let best='1F',dist=Infinity;
+  for(const [name,y] of Object.entries(floorHeight)){const d=Math.abs(player.position.y-y);if(d<dist){dist=d;best=name}}
+  return best;
+}
+function nearestInteractable(){
+  if(currentRide||elevatorTransit||modal.classList.contains('open'))return null;
+  let nearest=null,best=9.5;
+  for(const f of facilities){
+    if(f.kind==='elevator'&&f.multi){
+      const d=Math.hypot(player.position.x-f.x,player.position.z-f.z);
+      if(d<best){best=d;nearest=f}continue;
+    }
+    const floorMatch=f.floor==='매직아일랜드'
+      ? player.position.z<-61
+      : Math.abs(player.position.y-(floorHeight[f.floor]??0))<3.5;
+    if(!floorMatch)continue;
+    const d=Math.hypot(player.position.x-f.x,player.position.z-f.z);
+    if(d<best){best=d;nearest=f}
+  }
+  return nearest;
+}
+function renderPrompt(){
+  activeFacility=nearestInteractable();
+  if(activeFacility){
+    const how=activeFacility.kind==='ride'?'탑승하기':activeFacility.kind==='restaurant'?'식당 이용하기':activeFacility.kind==='elevator'?'층 선택하기':activeFacility.kind==='escalator'||activeFacility.kind==='stairs'?'층 이동하기':activeFacility.kind==='shop'?'매장 둘러보기':'시설 이용하기';
+    prompt.textContent=activeFacility.name+' · '+how+'  [E]';
+    actionButton.textContent=how;
+    actionButton.style.background='#f1c66e';
+  }else{
+    prompt.textContent='가까운 시설로 이동하면 이용 안내가 표시됩니다.';
+    actionButton.textContent=currentRide?'탑승 중…':'가까이 이동하세요';
+    actionButton.style.background='#27394b'; 
+  }
+}
+function rideDescription(f){
+  if(/롤러|레볼루션|아트란티스|혜성특급|카트라이더|모노레일/.test(f.name))return '차량에 탑승해 코스를 따라 이동하는 어트랙션 체험';
+  if(/드롭|타워|풍선비행/.test(f.name))return '높이 올라가 파크의 전경을 둘러보는 체험';
+  if(/해적선|스윙|자이로/.test(f.name))return '회전하거나 흔들리는 탑승 장치를 체험';
+  if(/보트|후룸|신밧드|드림/.test(f.name))return '보트에 탑승해 실내 코스를 이동하는 체험';
+  return '이 시설의 가상 탑승 체험을 시작합니다.';
+}
+function showFacility(f){
+  if(f.kind==='ride'){
+    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p><p>가상 탑승 시간 약 18초 · 언제든 체험 종료 후 원래 위치로 돌아옵니다.</p><div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
+    document.querySelector('#doRide').onclick=()=>{closeModal();startRide(f)};
+    document.querySelector('#cancelModal').onclick=closeModal;
+  }else if(f.kind==='restaurant'){
+    const menus=['대표 메뉴','세트 메뉴','음료·디저트'];
+    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · DINING</div><h2>'+escHtml(f.name)+'</h2><p>가상 식당 체험입니다. 메뉴를 선택하면 테이블에서 식사하는 장면이 진행됩니다.</p><div class="choiceGrid">'+menus.map((m,i)=>'<button class="choiceButton" data-menu="'+i+'">'+m+'<small>가상 메뉴 선택</small></button>').join('')+'</div><div id="foodMessage"></div><div class="modalActions"><button id="cancelModal">나가기</button></div>');
+    modalBody.querySelectorAll('[data-menu]').forEach(btn=>btn.addEventListener('click',()=>startMeal(f,menus[Number(btn.dataset.menu)])));
+    document.querySelector('#cancelModal').onclick=closeModal;
+  }else if(f.kind==='elevator'){
+    openModal('<div class="modalEyebrow">VERTICAL TRANSPORT</div><h2>'+escHtml(f.name)+'</h2><p>이동할 층을 선택하세요. 엘리베이터가 층 사이를 이동합니다.</p><div class="choiceGrid">'+floorOrder.map(fl=>'<button class="choiceButton" data-floor="'+fl+'">'+fl+'<small>이 층으로 이동</small></button>').join('')+'</div><div class="modalActions"><button id="cancelModal">닫기</button></div>');
+    modalBody.querySelectorAll('[data-floor]').forEach(btn=>btn.addEventListener('click',()=>startElevator(f,btn.dataset.floor)));
+    document.querySelector('#cancelModal').onclick=closeModal;
+  }else if(f.kind==='escalator'||f.kind==='stairs'){
+    const here=currentFloor(),idx=floorOrder.indexOf(here);
+    const prev=floorOrder[Math.max(0,idx-1)],next=floorOrder[Math.min(floorOrder.length-1,idx+1)];
+    openModal('<div class="modalEyebrow">FLOOR CONNECTION</div><h2>'+escHtml(f.name)+'</h2><p>연결된 층으로 이동합니다.</p><div class="modalActions"><button class="primary" id="goNext">'+next+'로 이동</button><button id="goPrev">'+prev+'로 이동</button><button id="cancelModal">취소</button></div>');
+    document.querySelector('#goNext').onclick=()=>{closeModal();teleportFloor(f,next)};
+    document.querySelector('#goPrev').onclick=()=>{closeModal();teleportFloor(f,prev)};
+    document.querySelector('#cancelModal').onclick=closeModal;
+  }else if(f.kind==='shop'){
+    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · SHOP</div><h2>'+escHtml(f.name)+'</h2><p>매장 내부를 둘러보는 가상 체험입니다. 상품 진열대를 살펴보고 쇼핑 화면을 이용할 수 있습니다.</p><div class="modalActions"><button class="primary" id="browseShop">매장 둘러보기</button><button id="cancelModal">닫기</button></div>');
+    document.querySelector('#browseShop').onclick=()=>{openModal('<div class="modalEyebrow">SHOPPING</div><h2>'+escHtml(f.name)+'</h2><p>가상 매장 둘러보기를 완료했습니다. 실제 결제나 구매는 진행되지 않습니다.</p><div class="modalActions"><button id="doneShop" class="primary">완료</button></div>');document.querySelector('#doneShop').onclick=closeModal};
+    document.querySelector('#cancelModal').onclick=closeModal;
+  }else{
+    openModal('<div class="modalEyebrow">PARK SERVICE</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(f.detail||'편의시설의 위치와 이용 정보를 확인합니다.')+'</p><div class="modalActions"><button class="primary" id="serviceDone">확인</button></div>');
+    document.querySelector('#serviceDone').onclick=closeModal;
+  }
+}
+function tryInteract(){if(activeFacility)showFacility(activeFacility);else showToast('이용할 시설 가까이 이동해 주세요.')}
+document.addEventListener('keydown',e=>{
+  const key=e.key.toLowerCase();
+  if(key==='escape'){closeModal();return}
+  if(key==='e'){if(!e.repeat)tryInteract();return}
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keyState[key]=true;e.preventDefault()}
+});
+document.addEventListener('keyup',e=>{keyState[e.key.toLowerCase()]=false});
+document.querySelectorAll('#mobilePad button').forEach(btn=>{
+  const dir=btn.dataset.move;
+  btn.addEventListener('pointerdown',e=>{e.preventDefault();touchState[dir]=true;btn.setPointerCapture(e.pointerId)});
+  const release=e=>{e.preventDefault();touchState[dir]=false};
+  btn.addEventListener('pointerup',release);btn.addEventListener('pointercancel',release);btn.addEventListener('lostpointercapture',()=>{touchState[dir]=false});
+});
+actionButton.addEventListener('click',tryInteract);
+function startRide(f){
+  const vehicle=new THREE.Group();scene.add(vehicle);
+  const shell=mat(0x3e7895,.45),seat=mat(0xe8bd68,.55);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(2.8,1,2),shell);base.position.y=.8;vehicle.add(base);
+  for(let i=-1;i<=1;i++){const chair=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.55),seat);chair.position.set(i*.75,1.55,0);vehicle.add(chair)}
+  const origin=new THREE.Vector3(f.x,floorHeight[f.floor]??floorHeight['1F'],f.z);
+  player.visible=false;
+  currentRide={facility:f,vehicle,origin,started:performance.now(),duration:18000};
+  showToast(f.name+' 탑승을 시작합니다.');
+}
+function endRide(){
+  if(!currentRide)return;
+  const ride=currentRide;scene.remove(ride.vehicle);player.visible=true;
+  player.position.set(ride.origin.x,ride.origin.y,ride.origin.z+5);
+  currentRide=null;showToast('탑승이 종료되었습니다. 하차했습니다.');
+}
+function updateRide(now){
+  if(!currentRide)return;
+  const r=currentRide,elapsed=now-r.started,p=Math.min(1,elapsed/r.duration),a=p*Math.PI*2;
+  const f=r.facility;
+  let x=r.origin.x+Math.cos(a)*5,z=r.origin.z+Math.sin(a)*5,y=r.origin.y+1.3+Math.max(0,Math.sin(a*2))*2;
+  if(/드롭|타워/.test(f.name)){x=r.origin.x;z=r.origin.z;y=r.origin.y+1.3+(p<.55?p/.55*8:(1-(p-.55)/.45)*8)}
+  if(/해적선|자이로|스윙/.test(f.name)){x=r.origin.x;z=r.origin.z;y=r.origin.y+1.5+Math.sin(a*2)*2;r.vehicle.rotation.z=Math.sin(a*2)*.55}
+  r.vehicle.position.set(x,y,z);r.vehicle.rotation.y=-a;
+  const target=new THREE.Vector3(x,y+1,z);
+  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+  if(elapsed>=r.duration)endRide();
+}
+function startElevator(f,destination){
+  closeModal();const from=currentFloor(),toY=floorHeight[destination];
+  if(from===destination){showToast('이미 '+destination+'에 있습니다.');return}
+  elevatorTransit={facility:f,fromY:player.position.y,toY,from:performance.now(),duration:2400,destination};
+  showToast('엘리베이터가 '+destination+'으로 이동합니다.');
+}
+function teleportFloor(f,destination){
+  const y=floorHeight[destination];if(y===undefined)return;
+  player.position.y=y;player.position.x=f.x;player.position.z=f.z+6;
+  controls.target.set(player.position.x,player.position.y+1.25,player.position.z);
+  camera.position.set(player.position.x,player.position.y+8,player.position.z+17);controls.update();
+  showToast(destination+' 도착');
+}
+function updateElevator(now){
+  if(!elevatorTransit)return;
+  const t=Math.min(1,(now-elevatorTransit.from)/elevatorTransit.duration);
+  const eased=t*t*(3-2*t);
+  player.position.y=elevatorTransit.fromY+(elevatorTransit.toY-elevatorTransit.fromY)*eased;
+  const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
+  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+  if(t>=1){const dest=elevatorTransit.destination;player.position.y=floorHeight[dest];elevatorTransit=null;showToast(dest+' 도착');}
+}
+function startMeal(f,menu){
+  closeModal();if(foodTransit)return;
+  foodTransit={facility:f,menu,started:performance.now(),duration:7000};
+  showToast(menu+' 선택 · 식사 체험 시작');
+}
+function updateMeal(now){
+  if(!foodTransit)return;
+  if(now-foodTransit.started>=foodTransit.duration){showToast(facilityName(foodTransit.facility)+' 식사 체험 완료');foodTransit=null;}
+}
+function facilityName(f){return f&&f.name?f.name:'시설'}
+function updateWalk(dt){
+  if(currentRide||elevatorTransit||foodTransit||modal.classList.contains('open'))return;
+  const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
+  const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize().negate();
+  let forwardInput=(keyState.w||keyState.arrowup||touchState.forward?1:0)-(keyState.s||keyState.arrowdown||touchState.back?1:0);
+  let sideInput=(keyState.d||keyState.arrowright||touchState.right?1:0)-(keyState.a||keyState.arrowleft||touchState.left?1:0);
+  const direction=forward.clone().multiplyScalar(forwardInput).add(right.multiplyScalar(sideInput));
+  if(direction.lengthSq()>0){
+    direction.normalize();const speed=dt*19;
+    player.position.addScaledVector(direction,speed);
+    player.rotation.y=Math.atan2(direction.x,direction.z);
+  }
+  const floor=currentFloor();
+  if(floor==='매직아일랜드'){
+    player.position.x=THREE.MathUtils.clamp(player.position.x,-62,62);
+    player.position.z=THREE.MathUtils.clamp(player.position.z,-166,-64);
+  }else{
+    player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
+    player.position.z=THREE.MathUtils.clamp(player.position.z,-29,87);
+    if(floor!=='1F')player.position.z=THREE.MathUtils.clamp(player.position.z,-23,63);
+    // On the bridge, keep the visitor on the deck over the lake.
+    if(player.position.z<-30&&player.position.z>-67)player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5);
+    if(player.position.z<=-67){
+      const ellipse=(player.position.x/62)**2+((player.position.z+112)/49)**2;
+      if(ellipse>1.06){player.position.z=-66.5;player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5)}
+    }
+  }
+  if(player.position.z>63&&floor==='1F')player.position.y=floorHeight['1F'];
+  const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
+  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+}
+function updateInteraction(){
+  renderPrompt();
+}
+
+
+document.querySelector('#home').onclick=()=>{closeModal();if(currentRide)endRide();player.position.copy(spawnPosition);player.visible=true;camera.position.set(0,player.position.y+8,player.position.z+19);controls.target.set(player.position.x,player.position.y+1.25,player.position.z);controls.update()};
 document.querySelector('#labelsBtn').onclick=()=>{showLabels=!showLabels;updateLabels()};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-function animate(){requestAnimationFrame(animate);controls.update();updateParade(performance.now());renderer.render(scene,camera);updateLabels()}animate();
+let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 setTimeout(()=>{const l=document.querySelector('#loading');l.style.opacity=0;setTimeout(()=>l.remove(),550)},900);
 </script>
 </body></html>
