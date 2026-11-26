@@ -20,7 +20,7 @@ button{border:1px solid #ffffff26;background:#142333ed;color:#e7f0f8;padding:10p
 button:hover{background:#24415a}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#10151d;color:#dce5ef;z-index:5;font-size:13px;transition:opacity .5s}
 #labels{position:fixed;inset:0;pointer-events:none;z-index:1}
-.label{position:absolute;transform:translate(-50%,-50%);padding:5px 8px;border-radius:7px;background:#0d1724d9;border:1px solid #ffffff24;color:#eaf3fb;font-size:10px;white-space:nowrap}
+.label{position:absolute;transform:translate(-50%,-50%);padding:5px 8px;border-radius:7px;background:#0d1724d9;border:1px solid #ffffff24;color:#eaf3fb;font-size:10px;white-space:nowrap}\n#paradeStatus{font-variant-numeric:tabular-nums}\n#paradeStatus .live{color:#b9f2cf;font-weight:700}\n@media(max-width:650px){.controls{gap:4px}.controls button{padding:8px 9px;font-size:10px}}
 @media(max-width:650px){.top{left:10px;right:10px;top:10px}.panel{max-width:155px;font-size:10px}.bottom{left:10px;right:10px;bottom:10px}.hint{max-width:55%;font-size:10px}.brand{padding:9px 11px}}
 </style>
 </head>
@@ -29,11 +29,11 @@ button:hover{background:#24415a}
 <div id="loading">롯데월드 기본 공간을 구성하는 중…</div>
 <div class="hud top">
   <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span>EARLY BLOCKOUT · 3D WORLD</span></div>
-  <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<br><span style="color:#8fa5ba">세부 치수와 시설은 후속 단계에서 보정</span></div>
+  <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<div id="paradeStatus" style="margin-top:9px;padding-top:8px;border-top:1px solid #ffffff20;color:#fff1cf">겨울 시즌 · 해피 크리스마스 퍼레이드<br>다음 퍼레이드까지 10:00</div><span style="color:#8fa5ba">가상 시뮬레이션은 10분 간격으로 진행</span></div>
 </div>
 <div class="hud bottom">
   <div class="hint">마우스 드래그: 회전 · 휠: 확대/축소 · 우클릭 드래그: 이동</div>
-  <div class="controls"><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
+  <div class="controls"><button id="paradeNow">퍼레이드 미리보기</button><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
 </div>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
@@ -100,10 +100,149 @@ for(let i=0;i<9;i++)box(scene,-72+i*18,.23,84,16,.08,1.1,mat(i%2?0xc7c4ba:0x9da7
 label('LOTTE WORLD ADVENTURE',0,51,18);label('MAIN ENTRANCE',0,25,80);label('MAGIC ISLAND',0,8,-112);label('MAGIC CASTLE',0,45,-118);label('SEOKCHON LAKE',-80,4,-160);
 let showLabels=true;
 function updateLabels(){for(const l of labels){const v=l.p.clone().project(camera);l.el.style.display=showLabels&&v.z<1?'block':'none';l.el.style.left=((v.x*.5+.5)*innerWidth)+'px';l.el.style.top=((-v.y*.5+.5)*innerHeight)+'px'}}
+
+// Seasonal parade system: the simulation runs a parade every ten real-time minutes.
+const nowDate = new Date();
+const month = nowDate.getMonth() + 1;
+const seasons = {
+  winter: {title:'해피 크리스마스 퍼레이드', subtitle:'스위트 윈터 어드벤처', deck:0xd9e9f3, trim:0xd8ad65, accent:0x8f2636},
+  spring: {title:'봄꽃 퍼레이드', subtitle:'봄 시즌 테마', deck:0xe9b6c8, trim:0xffe6a8, accent:0x78a96b},
+  summer: {title:'썸머 페스티벌 퍼레이드', subtitle:'여름 시즌 테마', deck:0x54a8c7, trim:0xffd166, accent:0x287a9a},
+  autumn: {title:'다크 판타지 퍼레이드', subtitle:'가을 시즌 테마', deck:0x553d59, trim:0xe6a24e, accent:0x9c4b37}
+};
+const seasonKey = (month===11 || month===12 || month===1 || month===2) ? 'winter'
+  : (month>=3 && month<=5) ? 'spring' : (month>=6 && month<=8) ? 'summer' : 'autumn';
+const season = seasons[seasonKey];
+
+const paradeGroup = new THREE.Group();
+paradeGroup.visible = false;
+scene.add(paradeGroup);
+const paradeFloats = [];
+const paradeRoutePoints = [
+  [-40,22,3],[-29,22,-6],[-8,22,-10],[15,22,-8],[37,22,1],
+  [44,22,15],[41,22,31],[24,22,42],[2,22,45],[-20,22,42],
+  [-40,22,31],[-44,22,15]
+].map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+const paradeRoute = new THREE.CatmullRomCurve3(paradeRoutePoints,true,'catmullrom',0.35);
+
+function paradeBox(parent,x,y,z,w,h,d,material){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+  mesh.position.set(x,y+h/2,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function paradeSphere(parent,x,y,z,rx,ry,rz,material){
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),material);
+  mesh.position.set(x,y,z);mesh.scale.set(rx,ry,rz);mesh.castShadow=true;parent.add(mesh);return mesh;
+}
+function paradeCone(parent,x,y,z,r,h,material){
+  const mesh=new THREE.Mesh(new THREE.ConeGeometry(r,h,12),material);
+  mesh.position.set(x,y+h/2,z);mesh.castShadow=true;parent.add(mesh);return mesh;
+}
+function makeParadeFloat(index){
+  const root=new THREE.Group();
+  const deckMat=new THREE.MeshStandardMaterial({color:season.deck,roughness:.55,metalness:.12});
+  const trimMat=new THREE.MeshStandardMaterial({color:season.trim,metalness:.35,roughness:.35});
+  const accentMat=new THREE.MeshStandardMaterial({color:season.accent,roughness:.55});
+  const whiteMat=new THREE.MeshStandardMaterial({color:0xf5f7f4,roughness:.7});
+  const darkMat=new THREE.MeshStandardMaterial({color:0x29333d,roughness:.8});
+  paradeBox(root,0,1.4,0,12,1.1,6,deckMat);
+  paradeBox(root,0,2.45,0,12.3,.22,6.3,trimMat);
+  for(const x of [-4.1,4.1]) for(const z of [-2.35,2.35]){
+    const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,.55,20),darkMat);
+    wheel.rotation.x=Math.PI/2;wheel.position.set(x,1.35,z);wheel.castShadow=true;root.add(wheel);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.58,16),trimMat);
+    hub.rotation.x=Math.PI/2;hub.position.copy(wheel.position);root.add(hub);
+  }
+  if(seasonKey==='winter'){
+    if(index===0){
+      paradeBox(root,0,2.7,0,2.2,2.1,2.2,accentMat);
+      for(let tier=0;tier<4;tier++) paradeCone(root,0,4.3+tier*1.45,0,4.4-tier*.78,2.6,mat(0x1f7254,.7));
+      const star=new THREE.Mesh(new THREE.OctahedronGeometry(1.35),trimMat);star.position.set(0,11.3,0);root.add(star);
+      for(let i=0;i<18;i++){const a=i*2.399,r=1.5+(i%3)*.65;paradeSphere(root,Math.cos(a)*r,4.8+(i%4)*1.35,Math.sin(a)*r,.38,.38,.38,i%2?trimMat:accentMat)}
+      // Generic winter mascot, not a branded character.
+      paradeSphere(root,-2,4.4,2.1,.95,1.05,.72,mat(0x8a573d));
+      paradeSphere(root,-2,5.85,2.1,.9,.9,.75,mat(0x8a573d));
+      paradeSphere(root,-2.35,5.95,2.76,.12,.16,.08,whiteMat);
+      paradeSphere(root,-1.65,5.95,2.76,.12,.16,.08,whiteMat);
+      paradeSphere(root,-2,5.5,2.82,.14,.14,.1,mat(0x34252a));
+      for(let b=0;b<3;b++)paradeSphere(root,-2,4.25+b*.35,2.78,.13,.13,.1,trimMat);
+    } else if(index===1){
+      for(let i=0;i<3;i++){const x=-3.3+i*3.3;
+        paradeBox(root,x,3.1,0,2.5,2.4,2.5,i%2?accentMat:trimMat);
+        paradeBox(root,x,5.52,0,.38,.18,2.65,whiteMat);
+        paradeBox(root,x,5.52,0,2.65,.18,.38,whiteMat);
+      }
+      paradeSphere(root,0,7.4,0,1.55,1.55,1.55,whiteMat);
+      paradeSphere(root,0,9.25,0,1.15,1.15,1.15,whiteMat);
+      paradeSphere(root,-.35,9.4,.98,.13,.16,.08,darkMat);paradeSphere(root,.35,9.4,.98,.13,.16,.08,darkMat);
+      paradeCone(root,0,8.3,1.05,.32,.8,season.trim?trimMat:accentMat);
+      for(let j=0;j<3;j++)paradeSphere(root,0,7.1+j*.55,1.45,.13,.13,.1,accentMat);
+      paradeCone(root,0,10.5,0,.42,.8,trimMat);
+    } else {
+      const globeMat=new THREE.MeshPhysicalMaterial({color:0xc8e5f4,transparent:true,opacity:.38,roughness:.08,metalness:.1});
+      paradeSphere(root,0,7.1,0,3.2,3.2,3.2,globeMat);
+      paradeBox(root,0,3.1,0,4.8,1.1,3.2,accentMat);
+      paradeBox(root,0,4.5,0,2.2,2.3,2.1,whiteMat);
+      paradeCone(root,0,6.4,0,1.8,1.4,trimMat);
+      for(let i=0;i<8;i++){const a=i*Math.PI/4;paradeSphere(root,Math.cos(a)*2,6.5+Math.sin(a)*1.3,Math.sin(a)*2,.22,.22,.22,trimMat)}
+    }
+  } else {
+    const mainColor = seasonKey==='spring'?0xe9a7c0:seasonKey==='summer'?0xffcf68:0x6c4b70;
+    const mainMat=mat(mainColor,.55);
+    paradeSphere(root,0,6.6,0,2.7,2.7,2.7,mainMat);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;paradeSphere(root,Math.cos(a)*3.1,6.4,Math.sin(a)*2.1,1.1,1.1,1.1,trimMat)}
+    if(seasonKey==='autumn') paradeCone(root,0,8.8,0,1.2,2.2,accentMat);
+    else paradeSphere(root,0,9,0,1.1,1.1,1.1,trimMat);
+  }
+  return root;
+}
+for(let i=0;i<3;i++){const float=makeParadeFloat(i);paradeGroup.add(float);paradeFloats.push(float)}
+const paradeStatus=document.querySelector('#paradeStatus');
+const PARADE_INTERVAL=10*60*1000;
+const FLOAT_TRAVEL_TIME=80000;
+const PARADE_LASTS=FLOAT_TRAVEL_TIME+30000;
+let nextParadeAt=performance.now()+PARADE_INTERVAL;
+let paradeStartedAt=null;
+function clockText(ms){const seconds=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}
+function startSeasonalParade(){
+  if(paradeStartedAt!==null && performance.now()-paradeStartedAt<PARADE_LASTS)return;
+  paradeStartedAt=performance.now();
+  paradeGroup.visible=true;
+  paradeFloats.forEach(f=>f.visible=false);
+  paradeStatus.innerHTML='<span class="live">● 퍼레이드 진행 중</span><br>'+season.title+' · 겨울 축제 플로트가 어드벤처 1층 코스를 이동합니다.';
+}
+function updateParade(now){
+  if(now>=nextParadeAt){startSeasonalParade();nextParadeAt=now+PARADE_INTERVAL}
+  if(paradeStartedAt!==null){
+    const elapsed=now-paradeStartedAt;
+    if(elapsed>=PARADE_LASTS){paradeGroup.visible=false;paradeStartedAt=null}
+    else {
+      paradeFloats.forEach((float,i)=>{
+        const delay=i*15000;
+        const progress=Math.max(0,Math.min(1,(elapsed-delay)/FLOAT_TRAVEL_TIME));
+        float.visible=elapsed>=delay && progress<=1;
+        if(float.visible){
+          const p=paradeRoute.getPointAt(progress);
+          const tangent=paradeRoute.getTangentAt(Math.min(.9999,progress)).normalize();
+          float.position.copy(p);
+          float.rotation.y=Math.atan2(tangent.x,tangent.z);
+          float.position.y=p.y+Math.sin(now/260+i)*.12;
+        }
+      });
+    }
+  }
+  if(paradeStartedAt!==null){
+    const remaining=Math.max(0,PARADE_LASTS-(now-paradeStartedAt));
+    paradeStatus.innerHTML='<span class="live">● 퍼레이드 진행 중</span><br>'+season.title+' · 종료까지 '+clockText(remaining);
+  } else {
+    paradeStatus.innerHTML=season.title+'<br>다음 퍼레이드까지 '+clockText(nextParadeAt-now);
+  }
+}
+document.querySelector('#paradeNow').addEventListener('click',startSeasonalParade);
+
 document.querySelector('#home').onclick=()=>{camera.position.set(150,115,165);controls.target.set(0,12,0);controls.update()};
 document.querySelector('#labelsBtn').onclick=()=>{showLabels=!showLabels;updateLabels()};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);updateLabels()}animate();
+function animate(){requestAnimationFrame(animate);controls.update();updateParade(performance.now());renderer.render(scene,camera);updateLabels()}animate();
 setTimeout(()=>{const l=document.querySelector('#loading');l.style.opacity=0;setTimeout(()=>l.remove(),550)},900);
 </script>
 </body></html>
