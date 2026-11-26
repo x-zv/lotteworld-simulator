@@ -26,6 +26,26 @@ python3 -m http.server 8000
 
 Then visit http://localhost:8000.
 
+
+## Walkable park and interactions
+
+The scene now has stacked walkable levels for B1F and 1F–4F, plus a pedestrian bridge to the Magic Island blockout. Visitors can move with WASD or the arrow keys on desktop and with the on-screen direction pad on touch devices. The nearest facility shows an interaction prompt; press E on desktop or tap the action button on mobile.
+
+The initial facility catalog contains:
+- 42 attraction entries across B1F, 1F, 2F–4F, and Magic Island
+- 26 dining entries
+- 15 shop entries
+- 28 guest-service and vertical-circulation entries, including elevators, escalators, stairs, restrooms, lockers, first aid, guest relations, and other amenities
+
+Interaction behavior:
+- **Attractions:** open a ride card and start a short animated boarding sequence.
+- **Elevators:** choose B1F or 1F–4F; a lift cabin moves with the visitor between floors.
+- **Escalators and stairs:** move to the adjacent floor.
+- **Restaurants:** choose a sample menu category and play a short meal simulation.
+- **Shops and services:** open a facility-specific information or browsing panel.
+
+The catalog and the 3D models are an expandable first-pass blockout. Each entry has a visible sign and a category-specific model, but exact footprint, ride geometry, routes, interiors, menu items, and current operation status still need to be refined using verified references. Facility placement is approximate rather than surveyed.
+
 ## Parade behavior
 
 The simulator uses a ten-minute real-time interval measured from page load. Each parade procession lasts about 110 seconds and has a manual preview button. This interval is intentionally a simulator rule, not a recreation of the park's published show timetable. The current winter theme is based on Lotte World's 2026 winter season announcement; the parade floats are original generic winter-themed placeholders rather than exact character or float replicas.
