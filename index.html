@@ -1845,14 +1845,12 @@ function ridePhaseLabel(name,progress){
 }
 function rideBrakeZone(name,progress){
  if(name==='아트란티스'){
-  if(progress>=.28&&progress<.36)return 8.0;
-  if(progress>=.48&&progress<.58)return 5.0;
-  if(progress>=.76&&progress<.82)return 3.8;
-  if(progress>=.90&&progress<.995)return 2.8;
+  if(progress>=.60&&progress<.64)return 9.0;
+  if(progress>=.94&&progress<.995)return 2.8;
  }
  if(name==='후렌치레볼루션'){
-  if(progress>=.78&&progress<.84)return 6.0;
-  if(progress>=.91&&progress<.995)return 2.8;
+  if(progress>=.78&&progress<.82)return 7.0;
+  if(progress>=.94&&progress<.995)return 2.5;
  }
  if(progress>=.965&&progress<.999)return 2.2;
  return null;
@@ -1872,12 +1870,13 @@ function buildRidePhysics(f){
  for(let i=1;i<=samples;i++){
   const progress=i/samples,point=f.motionPath.getPointAt(progress);
   const grade=(point.y-prev.y)/ds;
-  const drag=name.includes('후룸')||name.includes('드림보트')||name.includes('와일드밸리')?.026:.012;
-  let accel=-9.81*grade-.10-drag*speed*speed;
+  const waterRide=/후룸라이드|드림보트|와일드밸리|신밧드의 모험/.test(name);
+  const drag=waterRide?.018:.0005;
+  let accel=-9.81*grade-.06-drag*speed*speed;
   let nextSpeed;
-  if(name==='후렌치레볼루션'&&progress<=.22){
+  if(name==='후렌치레볼루션'&&progress<=.12){
    // Chain lift: the train crawls uphill rather than pretending gravity accelerates it.
-   nextSpeed=2.6+1.0*Math.min(1,progress/.22);
+   nextSpeed=2.6+1.0*Math.min(1,progress/.12);
    accel=(nextSpeed-speed)/(Math.max(.001,ds/Math.max(1,speed)));
   }else if(name==='아트란티스'&&progress<=.13){
    // LSM launch force adds energy, while the uphill track still consumes it.
@@ -1891,7 +1890,8 @@ function buildRidePhysics(f){
   const brakeTarget=rideBrakeZone(name,progress);
   if(brakeTarget!==null){
    const brakeDecel=7.5;
-   nextSpeed=Math.max(brakeTarget,Math.sqrt(Math.max(0,nextSpeed*nextSpeed-2*brakeDecel*ds)));
+   const brakeSpeed=Math.sqrt(Math.max(0,speed*speed-2*brakeDecel*ds));
+   nextSpeed=Math.min(nextSpeed,Math.max(brakeTarget,brakeSpeed));
   }
   nextSpeed=Math.min(maxSpeed,nextSpeed);
   if(nextSpeed<.9&&progress<.94&&name!=='후렌치레볼루션')nextSpeed=.9;
@@ -2286,7 +2286,9 @@ function updateRide(now){
   if(state){
     const nowSpeed=(state.speedKmh||0)/3.6;
     const sampleDelta=Math.max(.001,elapsedSec-(r.lastStateElapsed??elapsedSec));
-    if(r.lastStateElapsed!==undefined)state.accelerationMS2=(nowSpeed-(r.lastSpeedMS||0))/sampleDelta;
+    const measuredSpeedAcceleration=r.lastStateElapsed!==undefined?(nowSpeed-(r.lastSpeedMS||0))/sampleDelta:0;
+    if(state.accelerationMS2===undefined)state.accelerationMS2=measuredSpeedAcceleration;
+    else state.speedAccelerationMS2=measuredSpeedAcceleration;
     r.lastStateElapsed=elapsedSec;r.lastSpeedMS=nowSpeed;
     state.elapsedSec=elapsedSec;
     if(!state.durationSec)state.durationSec=r.duration/1000;
