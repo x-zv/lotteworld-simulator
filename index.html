@@ -997,7 +997,7 @@ function buildFacilityModel(f){
           beamBetween(g,[x,y,z],[-x,y+4.4,-z],.11,mastMat);
         }
       }
-      const ring=new THREE.Group();ring.position.y=10;g.add(ring);
+      const ring=new THREE.Group();ring.position.y=0;g.add(ring);
       const seatHoop=new THREE.Mesh(new THREE.TorusGeometry(4.6,.46,12,72),rideYellow);seatHoop.rotation.x=Math.PI/2;ring.add(seatHoop);
       const innerHoop=new THREE.Mesh(new THREE.TorusGeometry(3.25,.22,8,72),stripe);innerHoop.rotation.x=Math.PI/2;ring.add(innerHoop);
       for(let j=0;j<40;j++){
@@ -1067,10 +1067,16 @@ function buildFacilityModel(f){
         const a=-Math.PI/2+i*Math.PI*2/48;
         pathPoints.push([11+8*Math.cos(a),11+8*Math.sin(a),0]);
       }
-      pathPoints.push(
-        [21,4,2],[27,7,5],[31,10,8],[33,6,12],[28,3,15],[19,3,17],
-        [8,4,17],[-2,8,14],[-10,6,9],[-17,3,4],[-23,2,-3]
-      );
+      pathPoints.push([21,4,2],[27,7,5],[31,10,8],[33,6,12]);
+      // 540-degree banked horizontal helix: the track wraps one-and-a-half turns
+      // around a compact island of indoor scenery before entering the final brake run.
+      for(let i=1;i<=60;i++){
+        const a=i/60*Math.PI*3;
+        const radius=8;
+        const y=6-2.2*(i/60);
+        pathPoints.push([25+Math.cos(a)*radius,y,12+Math.sin(a)*radius]);
+      }
+      pathPoints.push([12,3.8,12],[4,3.5,8],[-5,5,7],[-13,4,3],[-20,2,-3],[-23,2,-10]);
       const frCurve=makeLocalRideTrack(g,pathPoints,coasterTrackMat,coasterSupport);
       // Station and braking platforms.
       box(g,-23,1.15,-12,7,.38,3.2,mat(0x555f65,.7));
@@ -1643,9 +1649,9 @@ function getRideState(spec,elapsedSec){
 function getDropState(elapsedSec,durationSec=48){
  const t=THREE.MathUtils.clamp(elapsedSec,0,durationSec);
  const liftEnd=17,holdEnd=20,dropEnd=23.78,brakeEnd=29;
- let height=10,speed=0,phase='승강';
+ let height=0,speed=0,phase='승강';
  if(t<liftEnd){
-  const p=t/liftEnd;height=10+60*(p*p*(3-2*p));
+  const p=t/liftEnd;height=70*(p*p*(3-2*p));
  }else if(t<holdEnd){
   height=70;phase='상단 정지';
  }else if(t<dropEnd){
@@ -1763,7 +1769,8 @@ function startRide(f){
   }
   // Put the visitor inside the correct seat area for the vehicle family.
   const passenger=player.clone(true);passenger.scale.setScalar(.62);
-  if(f.motionType==='swing')passenger.position.set(7.4,-14.15,0);
+  if(path)passenger.position.set(0,.55,0);
+  else if(f.motionType==='swing')passenger.position.set(7.4,-14.15,0);
   else if(f.motionType==='drop')passenger.position.set(4.2,.45,0);
   else if(f.motionType==='ship')passenger.position.set(0,-5.35,0);
   else if(/회전목마/.test(f.name))passenger.position.set(2,1.8,0);
