@@ -1056,11 +1056,13 @@ function buildFacilityModel(f){
       const rocks=mat(0x766c5c,.98),wood=mat(0x7c4a30,.7);
       box(g,0,.3,0,7,.18,5,waterMat);
       for(let j=0;j<5;j++){const a=j*Math.PI*2/5;sphere(g,Math.cos(a)*3.1,.9,Math.sin(a)*2.2,1.3,1.4,1.1,rocks);}
-      const flumePts=[[-3,1.0,1.5],[-2,3.8,.8],[0,5.5,0],[2,3.2,-.8],[3,.9,-1.4]];
-      curveTube(g,flumePts,.42,waterMat,80);
-      const boat=new THREE.Group();boat.position.set(0,1.8,0);g.add(boat);
+      const flumePts=[[-5,1.0,2.1],[-4,2.4,1.8],[-2.5,4.8,.9],[0,6.3,0],[2.5,4.8,-.9],[4,2.4,-1.8],[5,1.0,-2.1],[3,1,-4],[-1,1,-4.6],[-5,1,-2]];
+      const flumeCurve=makeLocalRideTrack(g,flumePts,waterMat,rocks);
+      const boat=new THREE.Group();g.add(boat);
       sphere(boat,0,0,0,1.55,.35,.65,wood);box(boat,0,.3,0,2.2,.13,1.1,mat(0xe6bc6d));
-      f.motionPart=boat;f.motionType='water';rideMotionItems.push(f);
+      box(boat,0,.5,-.18,1.3,.35,.18,mat(0x67442e,.85));
+      for(let seat=0;seat<2;seat++)box(boat,seat===0?-.45:.45,.6,0,.4,.18,.5,mat(0xdec58f,.8));
+      f.motionPart=boat;f.motionType='localTrack';f.motionPath=flumeCurve;f.trackSpeed=.028;f.trackPhase=.18;rideMotionItems.push(f);
     }else if(/풍선비행|비행|풍선/.test(f.name)){
       cyl(g,0,.65,0,2.7,2.7,.35,mat(0x6c7c88,.6));
       const envelopeColors=[0xe9bf45,0x4a9978,0xe6e4d9,0xd76a3f,0xe0c452];
@@ -1310,7 +1312,7 @@ const playerMat=mat(0x3c94b9,.6),skinMat=mat(0xf0cba9,.75);
 cyl(player,0,.15,0,.62,.68,1.15,playerMat,20);
 sphere(player,0,1.65,0,.48,.48,.48,skinMat);
 box(player,0,.8,.48,.65,.18,.2,mat(0xe8be73));
-player.position.set(0,floorHeight['1F'],79);
+player.position.set(0,floorHeight['1F'],67);
 const spawnPosition=player.position.clone();
 
 // Anonymous, individually animated guests. They reproduce the crowd scale and movement
@@ -1499,7 +1501,7 @@ function updateCrowd(now,dt){
 }
 
 controls.target.set(player.position.x,player.position.y+1.25,player.position.z);
-camera.position.set(0,player.position.y+8,player.position.z+19);
+camera.position.set(0,player.position.y+16,player.position.z+25);
 controls.update();
 
 const keyState={};const touchState={forward:false,back:false,left:false,right:false};
