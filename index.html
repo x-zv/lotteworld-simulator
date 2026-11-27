@@ -619,12 +619,12 @@ for(let y=6;y<gyroDropHeight;y+=6){
   beamBetween(scene,[gyroDropX+3*scale,y,gyroDropZ-3*scale],[gyroDropX-3*scale,y+5,gyroDropZ+3*scale],.14,coasterBlueLight);
 }
 cyl(scene,gyroDropX,gyroDropHeight-2,gyroDropZ,4,4,2,coasterBlueLight);
-const gyroGondola=new THREE.Group();gyroGondola.position.set(gyroDropX,32,gyroDropZ);scene.add(gyroGondola);
+const gyroGondola=new THREE.Group();gyroGondola.position.set(gyroDropX,32,gyroDropZ);scene.add(gyroGondola);gyroGondola.visible=false;
 const gyroRing=new THREE.Mesh(new THREE.TorusGeometry(5.2,.55,12,64),mat(0xe7b32d));gyroRing.rotation.x=Math.PI/2;gyroGondola.add(gyroRing);
 for(let i=0;i<20;i++){const a=i*Math.PI*2/20,x=Math.cos(a)*5.2,z=Math.sin(a)*5.2;
   const seat=box(gyroGondola,x,0,z,1.1,1.1,.85,mat(i%2?0xd64230:0xf1c13b));seat.rotation.y=-a;
 }
-const gyroSwing=new THREE.Group();gyroSwing.position.set(-43,0,-96);scene.add(gyroSwing);
+const gyroSwing=new THREE.Group();gyroSwing.position.set(-39,0,-98);scene.add(gyroSwing);gyroSwing.visible=false;
 const swingWhite=mat(0xf0eee7,.65),swingRed=mat(0xb85d4f,.55);
 beamBetween(gyroSwing,[-10,1,0],[0,31,0],1.05,swingWhite);
 beamBetween(gyroSwing,[10,1,0],[0,31,0],1.05,swingWhite);
@@ -1010,20 +1010,38 @@ function buildFacilityModel(f){
       const canopyBand=new THREE.Mesh(new THREE.TorusGeometry(2.88,.18,10,48),gold);canopyBand.rotation.x=Math.PI/2;canopyBand.position.y=4.5;g.add(canopyBand);
       for(let j=0;j<8;j++){const a=j*Math.PI/4;sphere(g,Math.cos(a)*2.5,5.25,Math.sin(a)*2.5,.24,.24,.24,rideYellow);}
       f.motionPart=g;f.motionType='carousel';rideMotionItems.push(f);
-    }else if(/자이로드롭|에오스타워/.test(f.name)){
-      const mastMat=mat(0x326c90,.4),stripe=mat(0xe9e5d7,.6);
-      for(const x of [-1.35,1.35])for(const z of [-1.35,1.35])beamBetween(g,[x,.8,z],[x*.78,13,z*.78],.25,mastMat);
-      cyl(g,0,1,0,.7,.95,11.8,mastMat,24);
-      for(let y=2;y<12;y+=2.5){cyl(g,0,y,0,.78,.78,.25,stripe,24);}
-      for(let y=2;y<12;y+=2.7){
-        beamBetween(g,[-1.3,y,-1.3],[1.3,y+2.2,1.3],.1,gold);
-        beamBetween(g,[1.3,y,-1.3],[-1.3,y+2.2,1.3],.1,gold);
+    }else if(/자이로드롭/.test(f.name)){
+      const mastMat=mat(0x326c90,.38),stripe=mat(0xe9e5d7,.55),supportMat=mat(0xd8d8d2,.58);
+      const towerHeight=70;
+      // Four tapered legs, cross-bracing and a central guide mast.
+      for(const x of [-2.2,2.2])for(const z of [-2.2,2.2]){
+        beamBetween(g,[x*1.25,.5,z*1.25],[x*.72,towerHeight,z*.72],.34,supportMat);
       }
-      const ring=new THREE.Group();ring.position.y=8.7;g.add(ring);
-      const tor=new THREE.Mesh(new THREE.TorusGeometry(2.45,.3,10,40),rideYellow);tor.rotation.x=Math.PI/2;ring.add(tor);
-      for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*2.45,z=Math.sin(a)*2.45;const seat=box(ring,x,-.1,z,.62,.75,.5,rideAccent);seat.rotation.y=-a;}
+      cyl(g,0,1,0,.82,1.05,towerHeight-1,mastMat,32);
+      for(let y=5;y<towerHeight;y+=5){
+        cyl(g,0,y,0,1.05,1.05,.32,stripe,32);
+        for(const x of [-2.0,2.0])for(const z of [-2.0,2.0]){
+          beamBetween(g,[x,y,z],[-x,y+4.4,-z],.11,mastMat);
+        }
+      }
+      const ring=new THREE.Group();ring.position.y=10;g.add(ring);
+      const seatHoop=new THREE.Mesh(new THREE.TorusGeometry(4.6,.46,12,72),rideYellow);seatHoop.rotation.x=Math.PI/2;ring.add(seatHoop);
+      const innerHoop=new THREE.Mesh(new THREE.TorusGeometry(3.25,.22,8,72),stripe);innerHoop.rotation.x=Math.PI/2;ring.add(innerHoop);
+      for(let j=0;j<40;j++){
+        const a=j*Math.PI*2/40,x=Math.cos(a)*4.6,z=Math.sin(a)*4.6;
+        const seat=box(ring,x,.1,z,.58,.82,.72,mat(j%2?0xd84e3d:0xe9b638,.48));seat.rotation.y=-a;
+        beamBetween(ring,[Math.cos(a)*3.25,0,Math.sin(a)*3.25],[x,.3,z],.08,stripe);
+      }
       f.motionPart=ring;f.motionType='drop';rideMotionItems.push(f);
-    }else if(/월드모노레일/.test(f.name)){
+    }else if(/에오스타워/.test(f.name)){
+      const towerMat=mat(0x6f8790,.5),roofMat=mat(0x3c738b,.5);
+      cyl(g,0,.8,0,2.2,2.8,18,towerMat,28);
+      for(let y=3;y<18;y+=3)cyl(g,0,y,0,3,3,.28,mat(0xd7c9ab,.65),28);
+      const roof=new THREE.Mesh(new THREE.ConeGeometry(3.6,4,16),roofMat);roof.position.y=21;g.add(roof);
+      const topPod=new THREE.Group();topPod.position.y=8;g.add(topPod);
+      cyl(topPod,0,0,0,2.4,2.4,.5,rideYellow,32);
+      f.motionPart=topPod;f.motionType='spin';rideMotionItems.push(f);
+    }    }else if(/월드모노레일/.test(f.name)){
       const monoRail=mat(0x687e87,.55),monoSupport=mat(0xe5e4de,.6),monoTrainColor=mat(0x2f779b,.48);
       const monoPoints=[];
       for(let i=0;i<48;i++){const a=i/48*Math.PI*2;monoPoints.push([Math.cos(a)*10,8+Math.sin(a*2)*.55,Math.sin(a)*7]);}
@@ -1042,13 +1060,27 @@ function buildFacilityModel(f){
       }
       f.motionPart=monoTrain;f.motionType='localTrack';f.motionPath=monoCurve;f.trackSpeed=.035;f.trackPhase=.25;rideMotionItems.push(f);
     }else if(/자이로스윙/.test(f.name)){
-      const support=mat(0xf1eee6,.58);
-      beamBetween(g,[-3.3,.8,0],[0,11.8,0],.48,support);beamBetween(g,[3.3,.8,0],[0,11.8,0],.48,support);
-      beamBetween(g,[-3.3,.8,0],[-.7,6,0],.28,support);beamBetween(g,[3.3,.8,0],[.7,6,0],.28,support);
-      const arm=new THREE.Group();arm.position.set(0,10.7,0);g.add(arm);
-      beamBetween(arm,[0,0,0],[0,-5.5,0],.28,rideAccent);
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(3.1,.38,10,40),rideYellow);ring.rotation.x=Math.PI/2;ring.position.y=-6;arm.add(ring);
-      for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*3.1,z=Math.sin(a)*3.1;const seat=box(arm,x,-6,z,.64,.55,.55,rideAccent);seat.rotation.y=-a;}
+      const support=mat(0xf0eee6,.58),supportTrim=mat(0xb7c2c5,.5);
+      const pivotHeight=27;
+      beamBetween(g,[-4,.8,0],[0,pivotHeight,0],.65,support);
+      beamBetween(g,[4,.8,0],[0,pivotHeight,0],.65,support);
+      beamBetween(g,[-4,.8,0],[-1.0,13,0],.38,supportTrim);
+      beamBetween(g,[4,.8,0],[1.0,13,0],.38,supportTrim);
+      beamBetween(g,[-4,.8,0],[4,.8,0],.8,rideAccent);
+      const arm=new THREE.Group();arm.position.set(0,pivotHeight,0);g.add(arm);
+      beamBetween(arm,[0,0,0],[0,-13.4,0],.62,rideAccent);
+      const hub=cyl(arm,0,-13.6,0,1.4,1.4,.7,rideYellow,40);
+      const seatRing=new THREE.Mesh(new THREE.TorusGeometry(7.4,.52,12,100),mat(0xd2dbe0,.48));
+      seatRing.rotation.x=Math.PI/2;seatRing.position.y=-14;arm.add(seatRing);
+      const innerRing=new THREE.Mesh(new THREE.TorusGeometry(5.9,.2,8,100),supportTrim);
+      innerRing.rotation.x=Math.PI/2;innerRing.position.y=-14;arm.add(innerRing);
+      for(let j=0;j<40;j++){
+        const a=j*Math.PI*2/40,x=Math.cos(a)*7.4,z=Math.sin(a)*7.4;
+        beamBetween(arm,[Math.cos(a)*1.4,-13.7,Math.sin(a)*1.4],[x,-14,z],.08,supportTrim);
+        const seat=box(arm,x,-14,z,1.0,.75,.95,mat(j%2?0x394a59:0xd7e0e4,.45));seat.rotation.y=-a;
+        box(arm,x,-13.43,z,.78,.18,.72,rideAccent);
+      }
+      arm.userData.pivotHeight=pivotHeight;
       f.motionPart=arm;f.motionType='swing';rideMotionItems.push(f);
     }else if(/후렌치레볼루션|프렌치|혁명/.test(f.name)){
       const coasterTrackMat=mat(0x187db5,.38),coasterSupport=mat(0xe7e8e3,.55),coasterTie=mat(0x47545e,.78);
@@ -1109,7 +1141,7 @@ function buildFacilityModel(f){
       box(ship,0,.45,0,3.8,.22,1.25,wood);
       for(let j=0;j<5;j++)box(ship,-1.5+j*.75,1.1,0,.12,1.0,.12,cream);
       beamBetween(ship,[0,1.1,0],[0,2.4,0],.08,cream);
-      f.motionPart=armGroup;f.motionType='swing';rideMotionItems.push(f);
+      f.motionPart=armGroup;f.motionType='ship';rideMotionItems.push(f);
     }else if(/후룸라이드|드림보트|신밧드|와일드밸리|와일드정글|와일드윙|스톤익스프레스/.test(f.name)){
       const waterMat=new THREE.MeshStandardMaterial({color:0x168db5,roughness:.16,metalness:.1,transparent:true,opacity:.86});
       const rocks=mat(0x766c5c,.98),wood=mat(0x7c4a30,.7);
