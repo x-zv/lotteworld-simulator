@@ -540,18 +540,38 @@ const pathMat=mat(0xd5d0c3);const path=new THREE.Mesh(new THREE.TorusGeometry(69
 const coasterBlue=mat(0x126ea3,.42),coasterBlueLight=mat(0x48a2c9,.38),supportWhite=mat(0xe5e3dc,.65),rockMat=mat(0x716d67,.95),rockDark=mat(0x4e514e,.95);
 function addRailTrack(points,baseColor=coasterBlue){
   const center=points.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
-  const curve=new THREE.CatmullRomCurve3(center);
-  for(const side of [-.52,.52]){
-    const pts=[];for(let i=0;i<=120;i++){const t=i/120,p=curve.getPointAt(t),tan=curve.getTangentAt(t);
+  const curve=new THREE.CatmullRomCurve3(center,true,'catmullrom',.35);
+  const railOffset=.72;
+  for(const side of [-railOffset,railOffset]){
+    const pts=[];
+    for(let i=0;i<=220;i++){
+      const t=i/220,p=curve.getPointAt(t),tan=curve.getTangentAt(t);
       const sideVec=new THREE.Vector3(-tan.z,0,tan.x).normalize().multiplyScalar(side);
-      pts.push([p.x+sideVec.x,p.y,p.z+sideVec.z]);}
-    curveTube(scene,pts,.26,baseColor,150);
+      pts.push([p.x+sideVec.x,p.y,p.z+sideVec.z]);
+    }
+    curveTube(scene,pts,.27,baseColor,260);
   }
-  for(let i=0;i<=42;i++){
-    const t=i/42,p=curve.getPointAt(t),tan=curve.getTangentAt(t);
+  // Cross ties under the rails.
+  for(let i=0;i<150;i++){
+    const p=curve.getPointAt(i/150),tan=curve.getTangentAt(i/150);
     const sideVec=new THREE.Vector3(-tan.z,0,tan.x).normalize();
-    beamBetween(scene,[p.x-sideVec.x*.72,p.y-.2,p.z-sideVec.z*.72],[p.x+sideVec.x*.72,p.y-.2,p.z+sideVec.z*.72],.15,coasterBlueLight);
-    if(i%3===0&&p.y>4)beamBetween(scene,[p.x,p.y-1,p.z],[p.x,p.y-5,p.z],.22,supportWhite);
+    beamBetween(scene,[p.x-sideVec.x*1.02,p.y-.22,p.z-sideVec.z*1.02],[p.x+sideVec.x*1.02,p.y-.22,p.z+sideVec.z*1.02],.16,coasterBlueLight);
+  }
+  // Repeating support bents and X-bracing from the elevated track back to foundations.
+  for(let i=0;i<48;i+=3){
+    const p=curve.getPointAt(i/48),tan=curve.getTangentAt(i/48);
+    if(p.y<3.5)continue;
+    const sideVec=new THREE.Vector3(-tan.z,0,tan.x).normalize();
+    const spread=2.2,baseY=1.6,topY=p.y-.55;
+    const leftTop=[p.x-sideVec.x*spread,topY,p.z-sideVec.z*spread];
+    const rightTop=[p.x+sideVec.x*spread,topY,p.z+sideVec.z*spread];
+    const leftBase=[p.x-sideVec.x*spread*1.35,baseY,p.z-sideVec.z*spread*1.35];
+    const rightBase=[p.x+sideVec.x*spread*1.35,baseY,p.z+sideVec.z*spread*1.35];
+    beamBetween(scene,leftBase,leftTop,.28,supportWhite);
+    beamBetween(scene,rightBase,rightTop,.28,supportWhite);
+    beamBetween(scene,leftTop,rightTop,.24,supportWhite);
+    beamBetween(scene,leftBase,rightTop,.13,coasterBlueLight);
+    beamBetween(scene,rightBase,leftTop,.13,coasterBlueLight);
   }
   return curve;
 }
@@ -570,7 +590,7 @@ const atlantisTrackPoints=[
  [7,5,-157],[23,6,-158],[39,9,-153],[51,7,-141],[55,5,-126]
 ];
 const atlantisTrackCurve=addRailTrack(atlantisTrackPoints,coasterBlue);
-for(let x=-60;x<=55;x+=12)beamBetween(scene,[x,1,-145],[x,10+(Math.abs(x)%24),-145],.32,supportWhite);
+
 const gyroDropX=-48,gyroDropZ=-132,gyroDropHeight=48;
 cyl(scene,gyroDropX,2,gyroDropZ,5,5,1.6,mat(0x4b5763));
 for(let i=0;i<4;i++){
@@ -873,8 +893,8 @@ const facilityMaterials={
 function signTexture(text,color){
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
   const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#111d2b';ctx.fillRect(0,0,640,150);
-  ctx.fillStyle=color;ctx.fillRect(0,0,12,150);
+  ctx.fillStyle='#111d2b';ctx.fillRect(0,0,256,64);
+  ctx.fillStyle=color;ctx.fillRect(0,0,7,64);
   ctx.fillStyle='#f3f6f7';ctx.font='bold 21px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
   let t=text;if(t.length>16)t=t.slice(0,15)+'…';ctx.fillText(t,136,34,230);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;return texture;
@@ -953,7 +973,19 @@ function buildFacilityModel(f){
       const atlantisTrack=mat(0x126d9f,.4);
       curveTube(g,[[-3,.8,0],[-2,4,-1],[0,6,0],[2,3,1],[3,1.1,0]],.28,atlantisTrack,100);
       for(let j=0;j<4;j++)beamBetween(g,[-2.8+j*1.8,.7,-.4],[-2.8+j*1.8,3+(j%2)*2,-.4],.15,cream);
-      const boat=box(g,0,2,0,1.8,.55,1.0,mat(0xe4a843,.5));f.motionPart=boat;f.motionType='track';f.motionPath=atlantisTrackCurve;rideMotionItems.push(f);
+      const train=new THREE.Group();g.add(train);
+      for(let carIndex=0;carIndex<3;carIndex++){
+        const car=new THREE.Group();car.position.z=-carIndex*1.85;train.add(car);
+        const hull=mat(carIndex%2?0xe7ac3f:0x315b81,.48);
+        sphere(car,0,.1,0,1.18,.34,.78,hull);
+        box(car,0,.43,0,1.55,.22,1.15,mat(0xead9b6,.7));
+        for(let seat=0;seat<2;seat++){
+          box(car,seat===0?-.38:.38,.68,-.08,.48,.33,.45,mat(0x5f3e35,.7));
+          box(car,seat===0?-.38:.38,.92,-.24,.12,.18,.12,mat(0x303b45,.7));
+        }
+        for(const side of [-1,1])cyl(car,side*.87,-.05,0,.24,.24,.12,mat(0x343b41,.8),12);
+      }
+      f.motionPart=train;f.motionType='track';f.motionPath=atlantisTrackCurve;f.trackPhase=.12;rideMotionItems.push(f);
     }else if(/해적선|콘키스타도르/.test(f.name)){
       const shipFrame=mat(0xe6e5dc,.6),wood=mat(0x75432f,.72);
       beamBetween(g,[-3,.8,0],[0,10,0],.42,shipFrame);beamBetween(g,[3,.8,0],[0,10,0],.42,shipFrame);
@@ -1237,7 +1269,7 @@ const guestPantsPalette=[0x303c4b,0x4c5864,0x26303c,0x6b6058,0x485d4d];
 const guestGeometry={
  body:new THREE.CapsuleGeometry(.27,.55,3,7),
  head:new THREE.SphereGeometry(.205,12,10),
- hair:new THREE.SphereGeometry(.22,.14,.2,12,8),
+ hair:new THREE.SphereGeometry(.22,12,8),
  upperArm:new THREE.CapsuleGeometry(.075,.34,2,6),
  lowerArm:new THREE.CapsuleGeometry(.064,.31,2,6),
  thigh:new THREE.CapsuleGeometry(.10,.38,2,6),
@@ -1247,7 +1279,39 @@ const guestGeometry={
 };
 const guests=[];
 function guestMesh(parent,geometry,material,x,y,z){
- const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+ const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=false;m.receiveShadow=false;parent.add(m);return m;
+}
+// Replace the temporary player primitive with a proportioned guest character.
+player.clear();
+const playerSkin=mat(0xe3b99b,.78),playerHair=mat(0x2a2422,.9),playerShirt=mat(0x356b91,.72),playerPants=mat(0x303e4d,.82);
+const playerAvatarParts={arms:[],legs:[]};
+guestMesh(player,guestGeometry.body,playerShirt,0,1.12,0);
+cyl(player,0,1.48,0,.095,.095,.18,playerSkin,10);
+guestMesh(player,guestGeometry.head,playerSkin,0,1.83,0);
+const playerHairMesh=guestMesh(player,guestGeometry.hair,playerHair,0,2.0,-.025);playerHairMesh.scale.set(1.02,.68,1.02);
+for(const side of [-1,1])sphere(player,side*.072,1.86,.177,.025,.03,.018,mat(0x241f1c,.8));
+for(const side of [-1,1]){
+ const arm=new THREE.Group();arm.position.set(side*.34,1.42,0);player.add(arm);
+ guestMesh(arm,guestGeometry.upperArm,playerShirt,0,-.20,0);
+ const lower=new THREE.Group();lower.position.set(0,-.42,0);arm.add(lower);
+ guestMesh(lower,guestGeometry.lowerArm,playerSkin,0,-.17,0);
+ guestMesh(lower,guestGeometry.hand,playerSkin,0,-.37,.015);
+ playerAvatarParts.arms.push({upper:arm,lower});
+ const leg=new THREE.Group();leg.position.set(side*.145,.83,0);player.add(leg);
+ guestMesh(leg,guestGeometry.thigh,playerPants,0,-.21,0);
+ const calf=new THREE.Group();calf.position.set(0,-.4,0);leg.add(calf);
+ guestMesh(calf,guestGeometry.calf,playerPants,0,-.17,0);
+ guestMesh(calf,guestGeometry.shoe,mat(0x282a2c,.75),0,-.38,.075);
+ playerAvatarParts.legs.push({upper:leg,lower:calf});
+}
+function animatePlayerAvatar(now){
+ const moving=!!(keyState.w||keyState.a||keyState.s||keyState.d||keyState.arrowup||keyState.arrowdown||keyState.arrowleft||keyState.arrowright||touchState.forward||touchState.back||touchState.left||touchState.right);
+ const t=now/1000,phase=t*8.2;
+ const amount=moving?.5:.025;
+ playerAvatarParts.legs[0].upper.rotation.x=Math.sin(phase)*amount;
+ playerAvatarParts.legs[1].upper.rotation.x=Math.sin(phase+Math.PI)*amount;
+ playerAvatarParts.arms[0].upper.rotation.x=-Math.sin(phase)*amount*.75;
+ playerAvatarParts.arms[1].upper.rotation.x=-Math.sin(phase+Math.PI)*amount*.75;
 }
 function makeGuest(style,scale=1,role='walker'){
  const root=new THREE.Group();root.scale.setScalar(scale);scene.add(root);
@@ -1362,7 +1426,8 @@ function updateCrowd(now,dt){
   guest.arms[1].lower.rotation.x=.12+Math.max(0,Math.sin(phase+Math.PI))*.25;
   if(!moving){
    const idle=Math.sin(t*.85+guest.phase);
-   guest.root.position.y+=(guest.root.position.y+(idle*.035)-guest.root.position.y)*Math.min(1,dt*3);
+   const baseY=guest.walking?guest.route.getPointAt(guest.progress).y:guest.standingPoint.y;
+   guest.root.position.y=baseY+idle*.035;
    if(guest.action%4===0){
     guest.arms[0].upper.rotation.x=-1.05+Math.sin(t*1.5+guest.phase)*.08;
     guest.arms[0].upper.rotation.z=.2;
@@ -1594,20 +1659,26 @@ function updateFacilityRideMotion(now){
     if(!f.motionPart)continue;
     if(f.motionType==='swing')f.motionPart.rotation.z=Math.sin(t*.75)*.48;
     else if(f.motionType==='spin')f.motionPart.rotation.y=t*.9;
-    else if(f.motionType==='drop')f.motionPart.position.y=8.7+Math.sin(t*.55)*1.7;
+    else if(f.motionType==='drop'){
+      const phase=(t/32+(f.phase||0))%1;
+      if(phase<.46)f.motionPart.position.y=5+18*(phase/.46);
+      else if(phase<.54){const q=(phase-.46)/.08;f.motionPart.position.y=23-18*(q*q*(3-2*q));}
+      else f.motionPart.position.y=5;
+    }
     else if(f.motionType==='water'){f.motionPart.position.x=Math.sin(t*.7)*1.5;f.motionPart.position.z=Math.cos(t*.7)*.9;}
     else if(f.motionType==='coaster'){f.motionPart.position.x=Math.sin(t*1.2)*2;f.motionPart.position.z=Math.cos(t*1.2)*1.2;}
     else if(f.motionType==='track'&&f.motionPath){
-      const progress=(t*.105)%1,p=f.motionPath.getPointAt(progress),tan=f.motionPath.getTangentAt(progress);
+      const progress=(t*.045+(f.trackPhase||0))%1,p=f.motionPath.getPointAt(progress),tan=f.motionPath.getTangentAt(progress);
       f.motionPart.position.set(p.x-f.x,p.y-floorHeight['매직아일랜드'],p.z-f.z);
       f.motionPart.rotation.y=Math.atan2(tan.x,tan.z);
     }
     else if(f.motionType==='balloon')f.motionPart.position.y=Math.sin(t*.6)*.22;
   }
-  gyroGondola.position.y=20+Math.max(0,Math.sin(t*.26))*17;
+  const towerPhase=(t/34)%1;
+  gyroGondola.position.y=towerPhase<.48?5+30*(towerPhase/.48):towerPhase<.56?35-30*Math.min(1,(towerPhase-.48)/.08):5;
   swingArm.rotation.z=Math.sin(t*.48)*.52;
 }
-let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
+let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 window.__LOTTE_SIM_READY__=true;
 const bootLoader=document.querySelector('#loading');
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
