@@ -821,8 +821,9 @@ for(const f of ['B1F','1F','2F','3F','4F']) floorItems[f]=facilityCatalog.filter
 // Facility coordinates are traced from public Lotte World guide-map layouts.
 // Coordinate convention: map north is -Z; the Adventure ice rink is the central landmark.
 // These are map-proportional placements, not surveyed GPS/CAD measurements.
-// Map-traced placement. Coordinates are normalized to the 2026 guide-map footprints
-// and the ice-rink/entrance landmarks; they are not survey-grade CAD coordinates.
+// Map-traced placement. Current facility names/floors follow the 2026 Korean guide map;
+// relative geometry is traced from published isometric guide-map artwork and rink/entrance landmarks.
+// Values are local simulation units, not surveyed metres or CAD/GPS coordinates.
 const tracedFloorLayouts={
  'B1F':{
   // Relative positions traced from the B1F Underland plan: Wild Tour Gate to the left,
@@ -867,7 +868,7 @@ for(const floor of Object.keys(floorItems)){
  }
 }
 const islandLayout={
- // Positions follow the 2026 Magic Island guide-map order around the castle and shoreline.
+ // Magic Island positions are proportional traces from published guide-map artwork; not surveyed coordinates.
  '아트란티스':[23,-141],'자이로스윙':[-39,-98],'쁘띠빵빵':[4,-78],'자이로드롭':[-48,-132],
  '환타지드림':[43,-92],'혜성특급':[34,-114],'자이로스핀':[48,-119],'스톤익스프레스':[14,-88],
  '아르카나라이드':[-17,-82],'에오스타워':[-5,-145],
@@ -1697,8 +1698,9 @@ function showFacility(f){
     const specsHtml=specRows.length?'<div class="rideSpecGrid">'+specRows.map(v=>'<span>'+escHtml(v)+'</span>').join('')+'</div>':'<p>공개된 정확한 제원은 확인되지 않아 시뮬레이션 동작값으로만 구현되어 있습니다.</p>';
     const timingNote=spec.simDurationSec?'<p class="simNote">실제 총 운행시간은 공개 확인되지 않아 시뮬레이터 동작시간을 별도로 사용합니다.</p>':'';
     const profileNote=spec.speedProfile?'<p class="simNote">트랙 길이·최고속도·총 운행시간은 공개 제원 기준입니다. 구간별 속도 변화와 세부 레일 좌표는 공개 자료가 없어 시뮬레이션용 보간·사진 기반 근사입니다.</p>':'';
+    const motionNote=spec.maxSpeedKmh&&!spec.speedProfile?'<p class="simNote">최고속도는 공개 제원 표기값이며, 시간별 속도·운행 순서는 시뮬레이션용 추정입니다.</p>':'';
     const sourceNote=spec.source?'<p class="simNote">자료: '+escHtml(spec.source)+'</p>':'';
-    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p>'+specsHtml+(spec.elements?'<p>'+escHtml(spec.elements)+'</p>':'')+timingNote+profileNote+sourceNote+'<div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
+    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p>'+specsHtml+(spec.elements?'<p>'+escHtml(spec.elements)+'</p>':'')+timingNote+profileNote+motionNote+sourceNote+'<div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
     document.querySelector('#doRide').onclick=()=>{closeModal();startRide(f)};
     document.querySelector('#cancelModal').onclick=closeModal;
   }else if(f.kind==='restaurant'){
