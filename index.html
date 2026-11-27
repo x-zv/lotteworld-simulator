@@ -890,6 +890,28 @@ const facilityMaterials={
   ride:mat(0x427b9e,.55),restaurant:mat(0xc98748,.65),shop:mat(0x8d6aa8,.6),service:mat(0x4c8b83,.7),
   elevator:mat(0x8fc0ce,.25),escalator:mat(0x667b8c,.6),stairs:mat(0x7c8d9b,.7)
 };
+function makeLocalRideTrack(parent,points,railMaterial,supportMaterial){
+ const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])),true,'catmullrom',.35);
+ for(const side of [-.52,.52]){
+  const rail=[];for(let i=0;i<=180;i++){
+   const p=curve.getPointAt(i/180),tan=curve.getTangentAt(i/180);
+   const normal=new THREE.Vector3(-tan.z,0,tan.x).normalize().multiplyScalar(side);
+   rail.push([p.x+normal.x,p.y,p.z+normal.z]);
+  }
+  curveTube(parent,rail,.2,railMaterial,220);
+ }
+ for(let i=0;i<90;i++){
+  const p=curve.getPointAt(i/90),tan=curve.getTangentAt(i/90);
+  const normal=new THREE.Vector3(-tan.z,0,tan.x).normalize();
+  beamBetween(parent,[p.x-normal.x*.8,p.y-.18,p.z-normal.z*.8],[p.x+normal.x*.8,p.y-.18,p.z+normal.z*.8],.105,railMaterial);
+  if(i%8===0&&p.y>1.8){
+   beamBetween(parent,[p.x-1.2,.7,p.z],[p.x-1.2,p.y-.7,p.z],.16,supportMaterial);
+   beamBetween(parent,[p.x+1.2,.7,p.z],[p.x+1.2,p.y-.7,p.z],.16,supportMaterial);
+   beamBetween(parent,[p.x-1.2,p.y-.7,p.z],[p.x+1.2,p.y-.7,p.z],.13,supportMaterial);
+  }
+ }
+ return curve;
+}
 function signTexture(text,color){
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
   const ctx=canvas.getContext('2d');
@@ -950,6 +972,24 @@ function buildFacilityModel(f){
       const tor=new THREE.Mesh(new THREE.TorusGeometry(2.45,.3,10,40),rideYellow);tor.rotation.x=Math.PI/2;ring.add(tor);
       for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*2.45,z=Math.sin(a)*2.45;const seat=box(ring,x,-.1,z,.62,.75,.5,rideAccent);seat.rotation.y=-a;}
       f.motionPart=ring;f.motionType='drop';rideMotionItems.push(f);
+    }else if(/월드모노레일/.test(f.name)){
+      const monoRail=mat(0x687e87,.55),monoSupport=mat(0xe5e4de,.6),monoTrainColor=mat(0x2f779b,.48);
+      const monoPoints=[];
+      for(let i=0;i<48;i++){const a=i/48*Math.PI*2;monoPoints.push([Math.cos(a)*10,8+Math.sin(a*2)*.55,Math.sin(a)*7]);}
+      const monoCurve=makeLocalRideTrack(g,monoPoints,monoRail,monoSupport);
+      for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.cos(a)*10,z=Math.sin(a)*7;
+        beamBetween(g,[x,.8,z],[x,7.3,z],.3,monoSupport);
+        cyl(g,x,7.2,z,.52,.52,.24,monoRail,12);
+      }
+      const monoTrain=new THREE.Group();g.add(monoTrain);
+      for(let i=0;i<3;i++){
+        const car=new THREE.Group();car.position.z=-i*1.7;monoTrain.add(car);
+        box(car,0,0,0,2.2,1.25,1.55,monoTrainColor);
+        const cabinGlass=new THREE.Mesh(new THREE.BoxGeometry(1.85,.7,1.6),new THREE.MeshPhysicalMaterial({color:0x9ed5df,transparent:true,opacity:.55,roughness:.15}));
+        cabinGlass.position.y=.55;car.add(cabinGlass);
+        box(car,0,.95,0,2.05,.18,1.5,mat(0xe4e8e4,.5));
+      }
+      f.motionPart=monoTrain;f.motionType='localTrack';f.motionPath=monoCurve;f.trackSpeed=.035;f.trackPhase=.25;rideMotionItems.push(f);
     }else if(/자이로스윙/.test(f.name)){
       const support=mat(0xf1eee6,.58);
       beamBetween(g,[-3.3,.8,0],[0,11.8,0],.48,support);beamBetween(g,[3.3,.8,0],[0,11.8,0],.48,support);
@@ -960,13 +1000,26 @@ function buildFacilityModel(f){
       for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*3.1,z=Math.sin(a)*3.1;const seat=box(arm,x,-6,z,.64,.55,.55,rideAccent);seat.rotation.y=-a;}
       f.motionPart=arm;f.motionType='swing';rideMotionItems.push(f);
     }else if(/후렌치레볼루션|프렌치|혁명/.test(f.name)){
-      const trackMat=mat(0x167eb8,.35),supportMat=mat(0xe3e6e3,.55);
-      const loop=new THREE.Mesh(new THREE.TorusGeometry(3.8,.25,12,72),trackMat);loop.position.set(0,5.1,0);g.add(loop);
-      const loop2=new THREE.Mesh(new THREE.TorusGeometry(3.05,.19,10,64),mat(0x63b1d0,.4));loop2.position.set(.4,5.1,.18);g.add(loop2);
-      beamBetween(g,[-3.2,.7,0],[-3.2,8.7,0],.24,supportMat);beamBetween(g,[3.2,.7,0],[3.2,8.7,0],.24,supportMat);
-      curveTube(g,[[-5,.8,0],[-4,2,-1],[-2,4,0],[0,7,1],[2,3,0],[4,2,-1],[5,.8,0]],.22,trackMat,100);
-      for(let j=0;j<5;j++)beamBetween(g,[-4+j*2,.7,-1.4],[-4+j*2,3.3+(j%2)*1.5,-1.4],.13,supportMat);
-      const train=box(g,0,5.7,0,1.9,.6,1.0,rideYellow);f.motionPart=train;f.motionType='coaster';rideMotionItems.push(f);
+      const coasterTrackMat=mat(0x187db5,.38),coasterSupport=mat(0xe7e8e3,.55),coasterTie=mat(0x47545e,.78);
+      const pathPoints=[[-14,2,-8],[-11,2.6,-4],[-7,3.4,-1],[-3,2.8,0],[0,2,0]];
+      for(let i=1;i<=36;i++){
+        const a=-Math.PI/2+i*Math.PI*2/36;
+        pathPoints.push([5*Math.cos(a),7+5*Math.sin(a),0]);
+      }
+      pathPoints.push([3,3,3],[7,6,5],[12,5,2],[13,3,-3],[8,2,-7],[0,2,-9],[-8,2,-9]);
+      const frCurve=makeLocalRideTrack(g,pathPoints,coasterTrackMat,coasterSupport);
+      // Station platform, loading rails and loop-side maintenance catwalk.
+      box(g,-12,1.15,-8,6,.35,3.2,mat(0x555f65,.7));
+      for(const x of [-14,-11,-8])cyl(g,x,1.4,-6.5,.12,.12,1.2,coasterTie,10);
+      for(let i=0;i<8;i++)box(g,-5+i*1.4,1.35,2.2,.8,.18,.45,coasterSupport);
+      const frTrain=new THREE.Group();g.add(frTrain);
+      for(let carIndex=0;carIndex<4;carIndex++){
+        const car=new THREE.Group();car.position.z=-carIndex*1.05;frTrain.add(car);
+        box(car,0,.62,0,1.55,.52,.95,mat(carIndex%2?0xe0b743:0x1d5c89,.48));
+        box(car,0,1.0,-.15,1.25,.2,.55,mat(0x354858,.35));
+        for(const side of [-1,1])cyl(car,side*.55,.34,0,.17,.17,.12,mat(0x30363c,.7),12);
+      }
+      f.motionPart=frTrain;f.motionType='localTrack';f.motionPath=frCurve;f.trackSpeed=.055;f.trackPhase=.08;rideMotionItems.push(f);
     }else if(/아트란티스/.test(f.name)){
       const rock=mat(0x6c6a61,.95),rockLight=mat(0x9c9180,.95);
       for(let j=0;j<7;j++){const a=j*Math.PI*2/7;sphere(g,Math.cos(a)*1.8,1.3+(j%3)*.55,Math.sin(a)*1.5,1.5+(j%2)*.5,1.7,1.25,j%2?rock:rockLight);}
@@ -1667,6 +1720,13 @@ function updateFacilityRideMotion(now){
     }
     else if(f.motionType==='water'){f.motionPart.position.x=Math.sin(t*.7)*1.5;f.motionPart.position.z=Math.cos(t*.7)*.9;}
     else if(f.motionType==='coaster'){f.motionPart.position.x=Math.sin(t*1.2)*2;f.motionPart.position.z=Math.cos(t*1.2)*1.2;}
+    else if(f.motionType==='localTrack'&&f.motionPath){
+      const progress=((t*(f.trackSpeed||.045)+(f.trackPhase||0))%1+1)%1;
+      const p=f.motionPath.getPointAt(progress),tan=f.motionPath.getTangentAt(progress);
+      f.motionPart.position.set(p.x,p.y,p.z);
+      f.motionPart.rotation.y=Math.atan2(tan.x,tan.z);
+      f.motionPart.rotation.z=Math.atan2(tan.y,Math.hypot(tan.x,tan.z));
+    }
     else if(f.motionType==='track'&&f.motionPath){
       const progress=(t*.045+(f.trackPhase||0))%1,p=f.motionPath.getPointAt(progress),tan=f.motionPath.getTangentAt(progress);
       f.motionPart.position.set(p.x-f.x,p.y-floorHeight['매직아일랜드'],p.z-f.z);
