@@ -70,6 +70,10 @@ button:hover{background:#24415a}
 .rideHudTrack{height:6px;border-radius:8px;background:#ffffff22;margin:9px 0 7px;overflow:hidden}
 #rideHudFill{height:100%;width:0;background:linear-gradient(90deg,#63b9d4,#f0c778);border-radius:8px}
 @media(max-width:700px){#rideHUD{bottom:175px}.rideHudSpeed strong{font-size:19px}}
+
+.rideSpecGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:14px 0}
+.rideSpecGrid span{padding:9px 10px;border-radius:9px;background:#1b3043;border:1px solid #ffffff17;color:#f0d59c;font-size:12px}
+.simNote{font-size:11px!important;color:#92a7b8!important}
 </style>
 </head>
 <body>
@@ -1651,9 +1655,62 @@ function rideDescription(f){
   if(/보트|후룸|신밧드|드림/.test(f.name))return '보트에 탑승해 실내 코스를 이동하는 체험';
   return '이 시설의 가상 탑승 체험을 시작합니다.';
 }
+function getRideState(spec,elapsedSec){
+ const duration=spec?.durationSec??spec?.simDurationSec??18;
+ const t=THREE.MathUtils.clamp(elapsedSec,0,duration);
+ if(spec?.speedProfile?.length>1&&spec.lengthM){
+  const frames=spec.speedProfile;
+  let i=0;while(i<frames.length-2&&t>frames[i+1][0])i++;
+  const [t0,d0]=frames[i],[t1,d1]=frames[i+1];
+  const span=Math.max(.001,t1-t0),u=THREE.MathUtils.clamp((t-t0)/span,0,1);
+  const distance=d0+(d1-d0)*u;
+  return {progress:THREE.MathUtils.clamp(distance/spec.lengthM,0,1),distanceM:distance,speedKmh:(d1-d0)/span*3.6,elapsedSec:t,durationSec:duration};
+ }
+ const progress=duration>0?t/duration:1;
+ const speed=spec?.maxSpeedKmh?spec.maxSpeedKmh*Math.abs(Math.sin(Math.PI*progress)):0;
+ return {progress:THREE.MathUtils.clamp(progress,0,1),distanceM:spec?.lengthM?spec.lengthM*progress:null,speedKmh:speed,elapsedSec:t,durationSec:duration};
+}
+function getDropState(elapsedSec,durationSec=48){
+ const t=THREE.MathUtils.clamp(elapsedSec,0,durationSec);
+ const liftEnd=17,holdEnd=20,dropEnd=23,brakeEnd=28;
+ let height=10,speed=0,phase='승강';
+ if(t<liftEnd){const p=t/liftEnd;height=10+60*(p*p*(3-2*p));}
+ else if(t<holdEnd){height=70;phase='상단 정지';}
+ else if(t<dropEnd){const p=(t-holdEnd)/(dropEnd-holdEnd);height=70*(1-p*p*(3-2*p));speed=100*Math.sin(Math.PI*p/2);phase='낙하';}
+ else if(t<brakeEnd){height=0;phase='제동';}
+ else {height=0;phase='하차 준비';}
+ return {heightM:height,speedKmh:speed,phase,progress:t/durationSec,elapsedSec:t,durationSec};
+}
+function setRideHud(ride,state){
+ const hud=document.querySelector('#rideHUD');if(!hud)return;
+ if(!ride){hud.classList.remove('active');return;}
+ hud.classList.add('active');
+ const spec=ride.facility.rideSpec||{};
+ const max=spec.maxSpeedKmh?Math.round(spec.maxSpeedKmh)+' km/h':'—';
+ const current=Math.max(0,Math.round(state.speedKmh||0));
+ document.querySelector('#rideHudName').textContent=ride.facility.name;
+ document.querySelector('#rideHudClock').textContent=clockText(Math.max(0,(state.durationSec-state.elapsedSec)*1000));
+ document.querySelector('#rideHudSpeed').textContent=current+' km/h';
+ document.querySelector('#rideHudMax').textContent='최고 '+max;
+ const distance=spec.lengthM?Math.round(state.distanceM||0)+' / '+spec.lengthM+' m':'코스 거리 미공개';
+ document.querySelector('#rideHudDistance').textContent=distance;
+ document.querySelector('#rideHudPhase').textContent=state.phase||'운행 중';
+ document.querySelector('#rideHudFill').style.width=(Math.max(0,Math.min(1,state.progress||0))*100)+'%';
+}
 function showFacility(f){
   if(f.kind==='ride'){
-    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p><p>가상 탑승 시간 약 18초 · 언제든 체험 종료 후 원래 위치로 돌아옵니다.</p><div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
+    const spec=f.rideSpec||{};
+    const specRows=[];
+    if(spec.lengthM)specRows.push('트랙 길이 '+spec.lengthM+'m');
+    if(spec.maxSpeedKmh)specRows.push('최고 속도 '+spec.maxSpeedKmh+'km/h');
+    if(spec.maxHeightM||spec.rideHeightM)specRows.push('높이 '+(spec.maxHeightM||spec.rideHeightM)+'m');
+    if(spec.maxAngleDeg)specRows.push('최대 각도 '+spec.maxAngleDeg+'°');
+    if(spec.durationSec)specRows.push('운행 시간 약 '+Math.floor(spec.durationSec/60)+'분 '+(spec.durationSec%60)+'초');
+    if(spec.seats)specRows.push('탑승 인원 '+spec.seats+'명');
+    const specsHtml=specRows.length?'<div class="rideSpecGrid">'+specRows.map(v=>'<span>'+escHtml(v)+'</span>').join('')+'</div>':'<p>공개된 정확한 제원은 확인되지 않아 시뮬레이션 동작값으로만 구현되어 있습니다.</p>';
+    const timingNote=spec.simDurationSec?'<p class="simNote">실제 총 운행시간은 공개 확인되지 않아 시뮬레이터 동작시간을 별도로 사용합니다.</p>':'';
+    const sourceNote=spec.source?'<p class="simNote">자료: '+escHtml(spec.source)+'</p>':'';
+    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p>'+specsHtml+(spec.elements?'<p>'+escHtml(spec.elements)+'</p>':'')+timingNote+sourceNote+'<div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
     document.querySelector('#doRide').onclick=()=>{closeModal();startRide(f)};
     document.querySelector('#cancelModal').onclick=closeModal;
   }else if(f.kind==='restaurant'){
