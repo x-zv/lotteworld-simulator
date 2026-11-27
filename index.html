@@ -78,6 +78,16 @@ button:hover{background:#24415a}
 
 .rideHudForce{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:7px;border-top:1px solid #ffffff20;color:#b7c8d6;font-size:11px}
 .rideHudForce strong{font-size:14px;color:#f3d69c}.rideHudForce span:last-child{font-variant-numeric:tabular-nums}
+#mapPanel{display:none;position:fixed;z-index:22;right:18px;bottom:76px;width:min(344px,calc(100vw - 28px));padding:12px;border:1px solid #ffffff35;border-radius:16px;background:#101923ed;color:#eaf2f8;box-shadow:0 16px 48px #0008;backdrop-filter:blur(14px);pointer-events:auto}
+#mapPanel.open{display:block}
+.mapHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.mapHead strong{font-size:12px;letter-spacing:.04em}
+#mapFloorLabel{font-size:10px;color:#f0d49c}
+#miniMap{display:block;width:100%;height:auto;border-radius:10px;background:#e8e6dd;border:1px solid #ffffff30}
+.mapLegend{display:flex;flex-wrap:wrap;gap:9px;margin-top:9px;color:#b9c8d5;font-size:10px}
+.mapLegend span{display:inline-flex;align-items:center;gap:4px}
+.mapDot{display:inline-block;width:7px;height:7px;border-radius:50%}
+@media(max-width:700px){#mapPanel{right:10px;bottom:70px;width:min(310px,calc(100vw - 20px))}}
 </style>
 </head>
 <body>
@@ -89,7 +99,17 @@ button:hover{background:#24415a}
 </div>
 <div class="hud bottom">
   <div class="hint">WASD 이동 · Shift 달리기 · 마우스 드래그 시점 회전 · E 이용하기</div>
-  <div class="controls"><button id="paradeNow">퍼레이드 미리보기</button><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
+  <div class="controls"><button id="paradeNow">퍼레이드 미리보기</button><button id="mapToggle" aria-expanded="false">지도</button><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
+</div>
+<div id="mapPanel" aria-hidden="true">
+  <div class="mapHead"><strong>현재 층 안내도</strong><span id="mapFloorLabel">UNDERLAND · B1F</span></div>
+  <canvas id="miniMap" width="340" height="268" aria-label="현재 층 시설 위치와 플레이어 위치를 표시하는 지도"></canvas>
+  <div class="mapLegend">
+    <span><i class="mapDot" style="background:#d96d50"></i>어트랙션</span>
+    <span><i class="mapDot" style="background:#d4a24e"></i>식음</span>
+    <span><i class="mapDot" style="background:#8c76bd"></i>쇼핑</span>
+    <span><i class="mapDot" style="background:#236dba"></i>내 위치</span>
+  </div>
 </div>
 <div id="interactionPrompt" aria-live="polite">주변 시설에 가까이 가면 이용 안내가 표시됩니다.</div>
 <div id="mobilePad" aria-label="이동 조작">
@@ -1624,6 +1644,7 @@ player.position.set(0,floorHeight['1F'],67);
 // B1F Adventure entrance spawn, oriented toward the indoor concourse.
 const B1_ENTRY_SPAWN=new THREE.Vector3(36,floorHeight['B1F'],52);
 player.position.copy(B1_ENTRY_SPAWN);
+player.rotation.y=Math.PI;
 const spawnPosition=player.position.clone();
 camera.position.set(0,floorHeight['B1F']+7,-39);
 controls.target.set(0,floorHeight['B1F']+1.4,-56);
@@ -1815,7 +1836,7 @@ function updateCrowd(now,dt){
 }
 
 controls.target.set(player.position.x,player.position.y+1.35,player.position.z);
-camera.position.set(player.position.x,player.position.y+8.5,player.position.z+15.5);
+camera.position.set(player.position.x,player.position.y+5.8,player.position.z+8.2);
 controls.update();
 
 const keyState={};const touchState={forward:false,back:false,left:false,right:false};
@@ -1836,6 +1857,67 @@ function currentFloor(){
   let best='1F',dist=Infinity;
   for(const [name,y] of Object.entries(floorHeight)){const d=Math.abs(player.position.y-y);if(d<dist){dist=d;best=name}}
   return best;
+}
+const mapPanel=document.querySelector('#mapPanel');
+const mapCanvas=document.querySelector('#miniMap');
+const mapToggle=document.querySelector('#mapToggle');
+mapToggle.addEventListener('click',()=>{
+  const open=!mapPanel.classList.contains('open');
+  mapPanel.classList.toggle('open',open);
+  mapPanel.setAttribute('aria-hidden',String(!open));
+  mapToggle.setAttribute('aria-expanded',String(open));
+  if(open)drawFloorMap();
+});
+function drawFloorMap(){
+  if(!mapPanel.classList.contains('open'))return;
+  const ctx=mapCanvas.getContext('2d');if(!ctx)return;
+  const W=mapCanvas.width,H=mapCanvas.height,pad=20;
+  const floor=currentFloor(),island=floor==='매직아일랜드';
+  const bounds=island?{x0:-72,x1:72,z0:-170,z1:-65}:{x0:-75,x1:75,z0:-55,z1:75};
+  const sx=x=>pad+(x-bounds.x0)/(bounds.x1-bounds.x0)*(W-pad*2);
+  const sy=z=>pad+(z-bounds.z0)/(bounds.z1-bounds.z0)*(H-pad*2);
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#e9e7df';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#d2d0c8';ctx.lineWidth=1;
+  for(let x=-60;x<=60;x+=20){ctx.beginPath();ctx.moveTo(sx(x),pad);ctx.lineTo(sx(x),H-pad);ctx.stroke();}
+  for(let z=Math.ceil(bounds.z0/20)*20;z<=bounds.z1;z+=20){ctx.beginPath();ctx.moveTo(pad,sy(z));ctx.lineTo(W-pad,sy(z));ctx.stroke();}
+  if(island){
+    ctx.fillStyle='#b9d2d8';ctx.beginPath();ctx.ellipse(sx(0),sy(-112),sx(63)-sx(0),Math.abs(sy(-161)-sy(-112)),0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#a5b88b';ctx.beginPath();ctx.ellipse(sx(0),sy(-112),sx(57)-sx(0),Math.abs(sy(-155)-sy(-112)),0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e2ddd1';ctx.beginPath();ctx.arc(sx(0),sy(-111),16,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#6d89a0';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('MAGIC ISLAND',sx(0),sy(-165));
+  }else{
+    ctx.fillStyle='#d7d3c8';ctx.fillRect(sx(-70),sy(-49),sx(70)-sx(-70),sy(65)-sy(-49));
+    ctx.strokeStyle='#b8b4a9';ctx.lineWidth=2;ctx.strokeRect(sx(-70),sy(-49),sx(70)-sx(-70),sy(65)-sy(-49));
+    ctx.fillStyle='#c7d9bf';ctx.beginPath();ctx.ellipse(sx(0),sy(12),sx(39)-sx(0),Math.abs(sy(39)-sy(12)),0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#e5e1d7';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(sx(0),sy(12),sx(34)-sx(0),Math.abs(sy(35)-sy(12)),0,0,Math.PI*2);ctx.stroke();
+    if(floor==='1F'){
+      ctx.fillStyle='#dcecf0';ctx.beginPath();ctx.ellipse(sx(0),sy(12),sx(26)-sx(0),Math.abs(sy(25)-sy(12)),0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(sx(0),sy(12),sx(26)-sx(0),Math.abs(sy(25)-sy(12)),0,0,Math.PI*2);ctx.stroke();
+    }else{
+      ctx.fillStyle='#e4dfd3';ctx.beginPath();ctx.ellipse(sx(0),sy(12),sx(13)-sx(0),Math.abs(sy(20)-sy(12)),0,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#69766c';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(floor==='B1F'?'UNDERLAND':'ADVENTURE · '+floor,sx(0),H-8);
+    if(floor==='1F'){
+      ctx.strokeStyle='#9a9a91';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(sx(0),sy(-53));ctx.lineTo(sx(0),sy(-67));ctx.stroke();
+    }
+  }
+  const colors={ride:'#d96d50',restaurant:'#d4a24e',shop:'#8c76bd',service:'#5b968b',elevator:'#3d8297',escalator:'#3d8297',stairs:'#3d8297'};
+  for(const f of facilities){
+    const match=island?f.floor==='매직아일랜드':f.floor===floor;
+    if(!match||!Number.isFinite(f.x)||!Number.isFinite(f.z))continue;
+    ctx.fillStyle=colors[f.kind]||'#687985';ctx.beginPath();
+    ctx.arc(sx(f.x),sy(f.z),f.kind==='ride'?4.6:3.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
+  }
+  if((island&&player.position.z<=-67)||(!island&&currentFloor()===floor)){
+    const px=sx(player.position.x),py=sy(player.position.z);
+    ctx.fillStyle='#236dba';ctx.strokeStyle='#ffffff';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffffff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.fillText('YOU',px,py-11);
+  }
+  const floorNames={'B1F':'UNDERLAND · B1F','1F':'ADVENTURE · 1F','2F':'ADVENTURE · 2F','3F':'ADVENTURE · 3F','4F':'ADVENTURE · 4F','매직아일랜드':'MAGIC ISLAND'};
+  document.querySelector('#mapFloorLabel').textContent=floorNames[floor]||floor;
 }
 function updateFloorStatus(){
   const el=document.querySelector('#floorStatus');if(!el)return;
@@ -2120,7 +2202,7 @@ window.addEventListener('keydown',e=>{
     return;
   }
   if(key==='escape'){closeModal();return}
-  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){
     keyState[key]=true;e.preventDefault();
   }
 },true);
@@ -2394,7 +2476,7 @@ function updateWalk(dt){
   const direction=forward.clone().multiplyScalar(forwardInput).add(right.multiplyScalar(sideInput));
   if(direction.lengthSq()>0){
     direction.normalize();
-    const speed=keyState.shift?4.2:1.75;
+    const speed=keyState.shift?9.5:5.2;
     player.position.addScaledVector(direction,dt*speed);
     player.rotation.y=Math.atan2(direction.x,direction.z);
   }
@@ -2437,7 +2519,7 @@ function updateInteraction(){
 }
 
 
-document.querySelector('#home').onclick=()=>{closeModal();if(currentRide)endRide();player.position.copy(spawnPosition);player.visible=true;camera.position.set(player.position.x,player.position.y+8,player.position.z+15.5);controls.target.set(player.position.x,player.position.y+1.25,player.position.z);controls.update()};
+document.querySelector('#home').onclick=()=>{closeModal();if(currentRide)endRide();player.position.copy(spawnPosition);player.visible=true;camera.position.set(player.position.x,player.position.y+5.8,player.position.z+8.2);controls.target.set(player.position.x,player.position.y+1.25,player.position.z);controls.update()};
 document.querySelector('#labelsBtn').onclick=()=>{showLabels=!showLabels;updateLabels()};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 function updateFacilityRideMotion(now){
@@ -2478,7 +2560,7 @@ function updateFacilityRideMotion(now){
     }else if(f.motionType==='balloon')f.motionPart.position.y=Math.sin(t*.6)*.22;
   }
 }
-let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();updateFloorStatus();if(!currentRide)controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
+let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();updateFloorStatus();drawFloorMap();if(!currentRide)controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 window.__LOTTE_SIM_READY__=true;
 const bootLoader=document.querySelector('#loading');
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
