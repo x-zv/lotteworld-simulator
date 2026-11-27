@@ -1755,7 +1755,8 @@ document.querySelectorAll('#mobilePad button').forEach(btn=>{
 actionButton.addEventListener('click',tryInteract);
 function startRide(f){
   const origin=new THREE.Vector3(f.x,floorHeight[f.floor]??floorHeight['1F'],f.z);
-  let vehicle,parent=scene,path=null,localPath=false;
+  const spec=f.rideSpec||{};
+  let vehicle,parent=scene,path=null,localPath=false,vehicleOffsetY=0;
   if(f.motionPath&&f.motionPart&&(f.motionType==='track'||f.motionType==='localTrack')){
     vehicle=f.motionPart.clone(true);
     localPath=f.motionType==='localTrack';
@@ -1763,16 +1764,30 @@ function startRide(f){
     vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);
     parent.add(vehicle);
     path=f.motionPath;
+  }else if(f.motionPart&&['drop','swing','ship'].includes(f.motionType)){
+    vehicle=f.motionPart.clone(true);
+    vehicleOffsetY=f.motionPart.position.y||0;
+    vehicle.position.set(f.x,origin.y+vehicleOffsetY,f.z);
+    vehicle.rotation.set(0,0,0);
+    scene.add(vehicle);
+    parent=scene;
   }else{
     vehicle=new THREE.Group();scene.add(vehicle);
     const shell=mat(0x3e7895,.45),seat=mat(0xe8bd68,.55);
     const base=new THREE.Mesh(new THREE.BoxGeometry(2.8,1,2),shell);base.position.y=.8;vehicle.add(base);
     for(let i=-1;i<=1;i++){const chair=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.55),seat);chair.position.set(i*.75,1.55,0);vehicle.add(chair)}
   }
-  // Keep the visitor visible as a seated passenger while the ride vehicle follows its track.
-  const passenger=player.clone(true);passenger.position.set(0,1.35,0);passenger.scale.setScalar(.68);vehicle.add(passenger);
+  // Put the visitor inside the correct seat area for the vehicle family.
+  const passenger=player.clone(true);passenger.scale.setScalar(.62);
+  if(f.motionType==='swing')passenger.position.set(7.4,-14.15,0);
+  else if(f.motionType==='drop')passenger.position.set(4.2,.45,0);
+  else if(f.motionType==='ship')passenger.position.set(0,-5.35,0);
+  else passenger.position.set(0,1.35,0);
+  vehicle.add(passenger);
   player.visible=false;
-  currentRide={facility:f,vehicle,parent,path,localPath,origin,started:performance.now(),duration:path?24000:18000};
+  const durationSec=spec.durationSec??spec.simDurationSec??(path?24:18);
+  currentRide={facility:f,vehicle,parent,path,localPath,origin,vehicleOffsetY,started:performance.now(),duration:durationSec*1000,spec};
+  setRideHud(currentRide,{progress:0,distanceM:0,speedKmh:0,elapsedSec:0,durationSec,phase:'출발 준비'});
   showToast(f.name+' 탑승을 시작합니다.');
 }
 function endRide(){
@@ -1781,33 +1796,54 @@ function endRide(){
   if(ride.vehicle.parent)ride.vehicle.parent.remove(ride.vehicle);
   player.visible=true;
   player.position.set(ride.origin.x,ride.origin.y,ride.origin.z+5);
-  currentRide=null;
+  currentRide=null;setRideHud(null,null);
   const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
   const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
   showToast('탑승이 종료되었습니다. 하차했습니다.');
 }
 function updateRide(now){
   if(!currentRide)return;
-  const r=currentRide,elapsed=now-r.started,p=Math.min(1,elapsed/r.duration),a=p*Math.PI*2;
-  const f=r.facility;
-  let target;
+  const r=currentRide,elapsedSec=(now-r.started)/1000,p=Math.min(1,elapsedSec/(r.duration/1000));
+  const f=r.facility,spec=r.spec||{};
+  let target,state;
   if(r.path){
-    const point=r.path.getPointAt(p),tangent=r.path.getTangentAt(p);
+    state=getRideState(spec,elapsedSec);
+    const point=r.path.getPointAt(state.progress),tangent=r.path.getTangentAt(state.progress);
     r.vehicle.position.copy(point);
     r.vehicle.rotation.y=Math.atan2(tangent.x,tangent.z);
     r.vehicle.rotation.z=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
     target=point.clone();
     if(r.localPath)target=f.group.localToWorld(target);
+    state.phase=elapsedSec<(spec.durationSec||0)?'주행 중':'도착';
+  }else if(f.motionType==='drop'){
+    state=getDropState(elapsedSec,r.duration/1000);
+    r.vehicle.position.set(f.x,r.origin.y+state.heightM,f.z);
+    r.vehicle.rotation.set(0,0,0);
+    target=new THREE.Vector3(f.x,r.vehicle.position.y,f.z);
+  }else if(f.motionType==='swing'||f.motionType==='ship'){
+    const amplitude=THREE.MathUtils.degToRad(spec.maxAngleDeg||(f.motionType==='ship'?75:96));
+    const cycleSeconds=f.motionType==='swing'?4.8:7.6;
+    const angle=Math.sin(elapsedSec*Math.PI*2/cycleSeconds)*amplitude;
+    r.vehicle.rotation.z=angle;
+    r.vehicle.rotation.y=0;
+    target=new THREE.Vector3(r.vehicle.position.x,r.vehicle.position.y-6,r.vehicle.position.z);
+    const max=spec.maxSpeedKmh||0;
+    state={progress:p,distanceM:null,speedKmh:max*Math.abs(Math.cos(elapsedSec*Math.PI*2/cycleSeconds)),elapsedSec,durationSec:r.duration/1000,phase:'스윙 운행'};
   }else{
-    let x=r.origin.x+Math.cos(a)*5,z=r.origin.z+Math.sin(a)*5,y=r.origin.y+1.3+Math.max(0,Math.sin(a*2))*2;
-    if(/드롭|타워/.test(f.name)){x=r.origin.x;z=r.origin.z;y=r.origin.y+1.3+(p<.55?p/.55*8:(1-(p-.55)/.45)*8)}
-    if(/해적선|자이로|스윙/.test(f.name)){x=r.origin.x;z=r.origin.z;y=r.origin.y+1.5+Math.sin(a*2)*2;r.vehicle.rotation.z=Math.sin(a*2)*.55}
+    const a=p*Math.PI*2;
+    const x=r.origin.x+Math.cos(a)*5,z=r.origin.z+Math.sin(a)*5,y=r.origin.y+1.3+Math.max(0,Math.sin(a*2))*2;
     r.vehicle.position.set(x,y,z);r.vehicle.rotation.y=-a;
     target=new THREE.Vector3(x,y+1,z);
+    state=getRideState(spec,elapsedSec);state.phase='탑승 중';
+  }
+  if(state){
+    state.elapsedSec=elapsedSec;
+    if(!state.durationSec)state.durationSec=r.duration/1000;
+    setRideHud(r,state);
   }
   target.y+=1.2;
   const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
-  if(elapsed>=r.duration)endRide();
+  if(elapsedSec>=r.duration/1000)endRide();
 }
 function startElevator(f,destination){
   closeModal();const from=currentFloor(),toY=floorHeight[destination];
