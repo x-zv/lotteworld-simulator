@@ -87,7 +87,7 @@ The four supplied interior photographs were used as the primary references for t
 - Official 2025 guide map: https://adventure.lotteworld.com/cmm/download.do?subPath=2025_Guidemap_eng.pdf
 - 2026 Korean guide-map listing: https://www.scribd.com/document/1072853286/2026-%EB%A1%AF%EB%8D%B0%EC%9B%94%EB%93%9C-%EA%B0%80%EC%9D%B4%EB%93%9C%EB%A7%B5-%EA%B5%AD%EB%AC%B8
 - Published isometric map artwork used only for relative placement tracing: https://javamilk.com/img/kr-lotte-world-adventure-guide-map.pdf
-- Atlantis ride data: https://data.coaster.cloud/en/attractions/lotte-world-atlantis
+- Atlantis ride data: https://coasterpedia.net/wiki/Atlantis_Adventure
 - French Revolution ride data: https://data.coaster.cloud/en/attractions/49eeee89-french-revolution-hulenchilebollusyeon
 
 ## Roadmap
