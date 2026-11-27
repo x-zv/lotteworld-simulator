@@ -1227,6 +1227,159 @@ sphere(player,0,1.65,0,.48,.48,.48,skinMat);
 box(player,0,.8,.48,.65,.18,.2,mat(0xe8be73));
 player.position.set(0,floorHeight['1F'],79);
 const spawnPosition=player.position.clone();
+
+// Anonymous, individually animated guests. They reproduce the crowd scale and movement
+// visible in the supplied photos without copying identifiable real people.
+const guestSkinPalette=[0xf0c8a8,0xd9a47e,0xb97855,0xf4d6bb,0xc58b68];
+const guestHairPalette=[0x28211d,0x47352b,0x302b2d,0x73513b,0x1b1b20];
+const guestShirtPalette=[0x315e8b,0xb54c49,0x4a806c,0xd0a34b,0x9a6b9e,0xd6dedc,0x3c4555,0x64a0b0,0xe2e0d4,0x9a6847];
+const guestPantsPalette=[0x303c4b,0x4c5864,0x26303c,0x6b6058,0x485d4d];
+const guestGeometry={
+ body:new THREE.CapsuleGeometry(.27,.55,3,7),
+ head:new THREE.SphereGeometry(.205,12,10),
+ hair:new THREE.SphereGeometry(.22,.14,.2,12,8),
+ upperArm:new THREE.CapsuleGeometry(.075,.34,2,6),
+ lowerArm:new THREE.CapsuleGeometry(.064,.31,2,6),
+ thigh:new THREE.CapsuleGeometry(.10,.38,2,6),
+ calf:new THREE.CapsuleGeometry(.082,.34,2,6),
+ hand:new THREE.SphereGeometry(.075,8,6),
+ shoe:new THREE.BoxGeometry(.17,.12,.3)
+};
+const guests=[];
+function guestMesh(parent,geometry,material,x,y,z){
+ const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+}
+function makeGuest(style,scale=1,role='walker'){
+ const root=new THREE.Group();root.scale.setScalar(scale);scene.add(root);
+ const skin=mat(guestSkinPalette[style%guestSkinPalette.length],.78);
+ const hair=mat(guestHairPalette[(style*3)%guestHairPalette.length],.88);
+ const shirt=mat(guestShirtPalette[style%guestShirtPalette.length],.78);
+ const pants=mat(guestPantsPalette[(style*2)%guestPantsPalette.length],.82);
+ const shoe=mat(style%3===0?0x25272b:0x4e4740,.75);
+ const face=mat(0x241f1c,.85);
+ guestMesh(root,guestGeometry.body,shirt,0,1.12,0);
+ cyl(root,0,1.48,0,.095,.095,.19,skin,10);
+ guestMesh(root,guestGeometry.head,skin,0,1.83,0);
+ const hairCap=guestMesh(root,guestGeometry.hair,hair,0,2.0,-.025);
+ hairCap.scale.set(1.02,.68,1.02);
+ if(style%4===1||style%4===2){
+  sphere(root,-.18,1.84,-.01,.09,.16,.13,hair);
+  sphere(root,.18,1.84,-.01,.09,.16,.13,hair);
+ }
+ for(const side of [-1,1]){
+  sphere(root,side*.072,1.86,.177,.025,.03,.018,face);
+ }
+ const arms=[],legs=[],hands=[];
+ for(const side of [-1,1]){
+  const arm=new THREE.Group();arm.position.set(side*.34,1.42,0);root.add(arm);
+  guestMesh(arm,guestGeometry.upperArm,shirt,0,-.20,0);
+  const elbow=new THREE.Group();elbow.position.set(0,-.42,0);arm.add(elbow);
+  guestMesh(elbow,guestGeometry.lowerArm,skin,0,-.17,0);
+  const handMesh=guestMesh(elbow,guestGeometry.hand,skin,0,-.37,.015);
+  arms.push({upper:arm,lower:elbow});hands.push(handMesh);
+  const leg=new THREE.Group();leg.position.set(side*.145,.83,0);root.add(leg);
+  guestMesh(leg,guestGeometry.thigh,pants,0,-.21,0);
+  const knee=new THREE.Group();knee.position.set(0,-.4,0);leg.add(knee);
+  guestMesh(knee,guestGeometry.calf,pants,0,-.17,0);
+  guestMesh(knee,guestGeometry.shoe,shoe,0,-.38,.075);
+  legs.push({upper:leg,lower:knee});
+ }
+ // Small shoulder bag/backpack details make the silhouettes read as visitors, not mannequins.
+ if(style%3!==0){
+  const bag=box(root,-.31,1.02,-.22,.23,.34,.15,mat(style%2?0x675341:0x303c4a,.85));
+  bag.rotation.z=-.15;
+ }
+ return {root,arms,legs,hands,head:root.children[2],phase:style*1.618,scale,role,action:style%5};
+}
+function makeGuestRoute(rx,rz,cy,level=.55){
+ const pts=ellipseLoop(0,level,cy,rx,rz,180).map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+ return new THREE.CatmullRomCurve3(pts,true,'catmullrom',.22);
+}
+const guestRoutes=[
+ makeGuestRoute(34,20.2,atriumCenterZ,.58),
+ makeGuestRoute(46,32,atriumCenterZ,.58),
+ makeGuestRoute(62,54,4,.58),
+ makeGuestRoute(53,38,atriumCenterZ,10.05),
+ makeGuestRoute(24,10.7,atriumCenterZ,1.05)
+];
+function addWalkingGuest(routeIndex,index,count,role='walker'){
+ const style=(index*7+routeIndex*3)%guestShirtPalette.length;
+ const guest=makeGuest(style,.88+((index*13)%17)/100,role);
+ const route=guestRoutes[routeIndex],direction=index%2===0?1:-1;
+ const progress=(index+.27)/(count+1);
+ const guestObj={...guest,route,direction,progress,speed:.62+((index*11)%23)/36,walking:true,stoppedUntil:0,stopPeriod:7+(index%5)*3,role};
+ const p=route.getPointAt(progress);
+ const tangent=route.getTangentAt(progress).multiplyScalar(direction);
+ guestObj.root.position.set(p.x,p.y,p.z);
+ guestObj.root.rotation.y=Math.atan2(tangent.x,tangent.z);
+ guests.push(guestObj);
+}
+for(let i=0;i<18;i++)addWalkingGuest(0,i,18);
+for(let i=0;i<12;i++)addWalkingGuest(1,i,12);
+for(let i=0;i<10;i++)addWalkingGuest(2,i,10);
+for(let i=0;i<6;i++)addWalkingGuest(3,i,6);
+for(let i=0;i<9;i++)addWalkingGuest(4,i,9,'skater');
+function addWatchingGuest(x,z,level,style,action){
+ const guest=makeGuest(style,.92+(style%4)*.025,'visitor');
+ guest.root.position.set(x,level,z);guest.root.rotation.y=Math.atan2(-x,atriumCenterZ-z);
+ guest.walking=false;guest.action=action;guest.phase=style*2.31;guest.standingPoint=guest.root.position.clone();
+ guests.push(guest);
+}
+for(const [i,p] of [
+ [-1,[-34,19]],[-1,[34,19]],[-1,[-39,7]],[-1,[39,7]],
+ [-1,[-20,34]],[-1,[20,34]],[-1,[-22,-11]],[-1,[22,-11]]
+].entries()){
+ const level=i<4?10.05:.58;
+ addWatchingGuest(p[1][0],p[1][1],level,i+2,i%3);
+}
+function updateCrowd(now,dt){
+ const t=now/1000;
+ for(const guest of guests){
+  const phase=t*(guest.role==='skater'?5.4:6.8)+guest.phase;
+  let moving=false;
+  if(guest.walking){
+   if(now>guest.stoppedUntil){
+    guest.progress=(guest.progress+guest.direction*guest.speed*dt/guest.route.getLength()+1)%1;
+    moving=true;
+    // Visitors occasionally pause to look at a ride or take a phone photo.
+    if(Math.sin(t*.42+guest.phase)>0.997)guest.stoppedUntil=now+900+(guest.action%4)*500;
+   }
+   const p=guest.route.getPointAt(guest.progress);
+   const tangent=guest.route.getTangentAt(guest.progress).multiplyScalar(guest.direction);
+   guest.root.position.set(p.x,p.y+(guest.role==='skater'?Math.sin(phase)*.045:0),p.z);
+   if(moving)guest.root.rotation.y=Math.atan2(tangent.x,tangent.z);
+  }
+  const stride=moving?(guest.role==='skater'?.18:.52):.035;
+  guest.legs[0].upper.rotation.x=Math.sin(phase)*stride;
+  guest.legs[1].upper.rotation.x=Math.sin(phase+Math.PI)*stride;
+  guest.legs[0].lower.rotation.x=Math.max(0,-Math.sin(phase+.7))*.34;
+  guest.legs[1].lower.rotation.x=Math.max(0,-Math.sin(phase+Math.PI+.7))*.34;
+  guest.arms[0].upper.rotation.x=-Math.sin(phase)*(.36+(guest.role==='skater'?.5:0));
+  guest.arms[1].upper.rotation.x=-Math.sin(phase+Math.PI)*(.36+(guest.role==='skater'?.5:0));
+  guest.arms[0].upper.rotation.z=.06;
+  guest.arms[1].upper.rotation.z=-.06;
+  guest.arms[0].lower.rotation.x=.12+Math.max(0,Math.sin(phase))*.25;
+  guest.arms[1].lower.rotation.x=.12+Math.max(0,Math.sin(phase+Math.PI))*.25;
+  if(!moving){
+   const idle=Math.sin(t*.85+guest.phase);
+   guest.root.position.y+=(guest.root.position.y+(idle*.035)-guest.root.position.y)*Math.min(1,dt*3);
+   if(guest.action%4===0){
+    guest.arms[0].upper.rotation.x=-1.05+Math.sin(t*1.5+guest.phase)*.08;
+    guest.arms[0].upper.rotation.z=.2;
+    guest.head.rotation.y=Math.sin(t*.7+guest.phase)*.18;
+   }else if(guest.action%4===1){
+    guest.arms[1].upper.rotation.x=-.88;
+    guest.arms[1].upper.rotation.z=-.16;
+    guest.head.rotation.x=.16+Math.sin(t+guest.phase)*.04;
+   }else{
+    guest.head.rotation.y=Math.sin(t*.55+guest.phase)*.28;
+   }
+  }else{
+   guest.head.rotation.y=Math.sin(t*.6+guest.phase)*.08;
+  }
+ }
+}
+
 controls.target.set(player.position.x,player.position.y+1.25,player.position.z);
 camera.position.set(0,player.position.y+8,player.position.z+19);
 controls.update();
@@ -1454,7 +1607,7 @@ function updateFacilityRideMotion(now){
   gyroGondola.position.y=20+Math.max(0,Math.sin(t*.26))*17;
   swingArm.rotation.z=Math.sin(t*.48)*.52;
 }
-let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
+let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 window.__LOTTE_SIM_READY__=true;
 const bootLoader=document.querySelector('#loading');
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
