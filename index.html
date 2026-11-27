@@ -847,7 +847,7 @@ const tracedFloorLayouts={
   '위니비니':[36,-5],'게임빌리지':[-39,-4]
  },
  '3F':{
-  '콩X고질라 더 라이드':[-30,3],'월드모노레일':[27,2],
+  '콩X고질라 더 라이드':[-30,3],'월드모노레일':[0,12],
   '공차':[-38,25],'김피라':[-20,28],'상하이':[2,28],'델키스':[28,25],
   '타로카드':[-36,-9],'게임빌리지':[37,-9]
  },
@@ -1014,9 +1014,9 @@ function buildFacilityModel(f){
     }    }else if(/월드모노레일/.test(f.name)){
       const monoRail=mat(0x687e87,.55),monoSupport=mat(0xe5e4de,.6),monoTrainColor=mat(0x2f779b,.48);
       const monoPoints=[];
-      for(let i=0;i<48;i++){const a=i/48*Math.PI*2;monoPoints.push([Math.cos(a)*10,8+Math.sin(a*2)*.55,Math.sin(a)*7]);}
+      for(let i=0;i<96;i++){const a=i/96*Math.PI*2;monoPoints.push([Math.cos(a)*58,8+Math.sin(a*2)*.55,Math.sin(a)*45]);}
       const monoCurve=makeLocalRideTrack(g,monoPoints,monoRail,monoSupport);
-      for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.cos(a)*10,z=Math.sin(a)*7;
+      for(let i=0;i<32;i++){const a=i*Math.PI/16,x=Math.cos(a)*58,z=Math.sin(a)*45;
         beamBetween(g,[x,.8,z],[x,7.3,z],.3,monoSupport);
         cyl(g,x,7.2,z,.52,.52,.24,monoRail,12);
       }
@@ -1730,10 +1730,12 @@ function startRide(f){
     vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);
     parent.add(vehicle);
     path=f.motionPath;
-  }else if(f.motionPart&&['drop','swing','ship'].includes(f.motionType)){
+  }else if(f.motionPart&&['drop','swing','ship','spin','carousel'].includes(f.motionType)){
     vehicle=f.motionPart.clone(true);
-    vehicleOffsetY=f.motionPart.position.y||0;
-    vehicle.position.set(f.x,origin.y+vehicleOffsetY,f.z);
+    const isWholeRideModel=f.motionPart===f.group;
+    const sourceOffset=isWholeRideModel?new THREE.Vector3():f.motionPart.position.clone();
+    vehicleOffsetY=sourceOffset.y;
+    vehicle.position.set(f.x+sourceOffset.x,origin.y+sourceOffset.y,f.z+sourceOffset.z);
     vehicle.rotation.set(0,0,0);
     scene.add(vehicle);
     parent=scene;
@@ -1748,6 +1750,8 @@ function startRide(f){
   if(f.motionType==='swing')passenger.position.set(7.4,-14.15,0);
   else if(f.motionType==='drop')passenger.position.set(4.2,.45,0);
   else if(f.motionType==='ship')passenger.position.set(0,-5.35,0);
+  else if(/회전목마/.test(f.name))passenger.position.set(2,1.8,0);
+  else if(f.motionType==='spin')passenger.position.set(2.2,1.0,0);
   else passenger.position.set(0,1.35,0);
   vehicle.add(passenger);
   player.visible=false;
@@ -1786,6 +1790,11 @@ function updateRide(now){
     r.vehicle.position.set(f.x,r.origin.y+state.heightM,f.z);
     r.vehicle.rotation.set(0,0,0);
     target=new THREE.Vector3(f.x,r.vehicle.position.y,f.z);
+  }else if(f.motionType==='spin'||f.motionType==='carousel'){
+    const spinPeriod=spec.durationSec||24;
+    r.vehicle.rotation.y=elapsedSec*Math.PI*2/(spinPeriod/3);
+    target=new THREE.Vector3(r.vehicle.position.x,r.vehicle.position.y+1.5,r.vehicle.position.z);
+    state={progress:p,distanceM:null,speedKmh:spec.maxSpeedKmh?spec.maxSpeedKmh*Math.abs(Math.cos(p*Math.PI*2)):0,elapsedSec,durationSec:r.duration/1000,phase:'회전 운행'};
   }else if(f.motionType==='swing'||f.motionType==='ship'){
     const amplitude=THREE.MathUtils.degToRad(spec.maxAngleDeg||(f.motionType==='ship'?75:96));
     const cycleSeconds=f.motionType==='swing'?4.8:7.6;
@@ -1894,7 +1903,7 @@ function updateFacilityRideMotion(now){
     }else if(f.motionType==='ship'){
       const amp=THREE.MathUtils.degToRad(spec.maxAngleDeg||75);
       f.motionPart.rotation.z=Math.sin(t*Math.PI*2/7.6+(f.motionPhase||0))*amp;
-    }else if(f.motionType==='spin')f.motionPart.rotation.y=t*.9;
+    }else if(f.motionType==='spin'||f.motionType==='carousel')f.motionPart.rotation.y=t*.9;
     else if(f.motionType==='drop'){
       const cycle=spec.simDurationSec||48;
       const state=getDropState((t+(f.motionPhase||0))%cycle,cycle);
