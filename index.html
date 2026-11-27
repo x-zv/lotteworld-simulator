@@ -355,9 +355,14 @@ for(const x of [-38,-31,-24]){
   cyl(scene,x,14.5,-143.9,1.55,1.55,.65,templeTrim,12);
 }
 box(scene,-31,16,-143.6,19,1.3,2,templeTrim);
-addRailTrack([[-65,8,-155],[-54,21,-161],[-42,12,-148],[-27,8,-145],[-12,26,-159],[5,12,-150],[23,22,-157],[42,9,-145],[59,15,-130]],coasterBlue);
+const atlantisTrackPoints=[
+ [15,5,-145],[25,8,-151],[39,16,-151],[47,21,-140],[43,13,-126],
+ [31,8,-119],[18,18,-119],[9,25,-128],[1,15,-139],[-2,8,-150],
+ [7,5,-157],[23,6,-158],[39,9,-153],[51,7,-141],[55,5,-126]
+];
+addRailTrack(atlantisTrackPoints,coasterBlue);
 for(let x=-60;x<=55;x+=12)beamBetween(scene,[x,1,-145],[x,10+(Math.abs(x)%24),-145],.32,supportWhite);
-const gyroDropX=57,gyroDropZ=-91,gyroDropHeight=48;
+const gyroDropX=-48,gyroDropZ=-132,gyroDropHeight=48;
 cyl(scene,gyroDropX,2,gyroDropZ,5,5,1.6,mat(0x4b5763));
 for(let i=0;i<4;i++){
   const a=Math.PI/4+i*Math.PI/2,x=gyroDropX+Math.cos(a)*3.3,z=gyroDropZ+Math.sin(a)*3.3;
@@ -376,7 +381,7 @@ const gyroRing=new THREE.Mesh(new THREE.TorusGeometry(5.2,.55,12,64),mat(0xe7b32
 for(let i=0;i<20;i++){const a=i*Math.PI*2/20,x=Math.cos(a)*5.2,z=Math.sin(a)*5.2;
   const seat=box(gyroGondola,x,0,z,1.1,1.1,.85,mat(i%2?0xd64230:0xf1c13b));seat.rotation.y=-a;
 }
-const gyroSwing=new THREE.Group();gyroSwing.position.set(-57,0,-96);scene.add(gyroSwing);
+const gyroSwing=new THREE.Group();gyroSwing.position.set(-43,0,-96);scene.add(gyroSwing);
 const swingWhite=mat(0xf0eee7,.65),swingRed=mat(0xb85d4f,.55);
 beamBetween(gyroSwing,[-10,1,0],[0,31,0],1.05,swingWhite);
 beamBetween(gyroSwing,[10,1,0],[0,31,0],1.05,swingWhite);
@@ -600,21 +605,57 @@ serviceItems.forEach((it)=>facilityCatalog.push({id:'f'+facilityCatalog.length,f
 
 const floorItems={};
 for(const f of ['B1F','1F','2F','3F','4F']) floorItems[f]=facilityCatalog.filter(it=>it.floor===f && it.kind!=='elevator' && it.kind!=='escalator' && it.kind!=='stairs');
-function gridPosition(index,count){
-  const cols=count>24?7:count>14?6:count>8?4:3;
-  const rows=Math.ceil(count/cols);
-  const col=index%cols,row=Math.floor(index/cols);
-  return {x:-48+col*(96/Math.max(1,cols-1)),z:-14+row*(66/Math.max(1,rows-1))};
-}
+// Facility coordinates are traced from public Lotte World guide-map layouts.
+// Coordinate convention: map north is -Z; the Adventure ice rink is the central landmark.
+// These are map-proportional placements, not surveyed GPS/CAD measurements.
+const tracedFloorLayouts={
+ 'B1F':{
+  '드림보트':[-48,-8],'4D 슈팅씨어터':[-58,-23],'와일드밸리':[-67,-38],'와일드정글':[-54,-52],'와일드윙':[-39,-55],
+  '오거스 팩토리':[-43,-5],'츄로빅':[-53,-17],'페어리테일 피자':[-62,-32],'101번지 남산돈까스':[-51,-45],'유브유부':[-35,-49],
+  '환타지 기프트샵':[-46,-28],'픽시매직':[-58,-42],'샤론캣 프리미엄 라운지':[-34,-38]
+ },
+ '1F':{
+  '신밧드의 모험':[-39,15],'스페인 해적선':[-49,31],'후룸라이드':[-57,45],'회전바구니':[-25,42],'로티트레인':[-8,48],
+  '배틀그라운드':[-56,-3],'플라이벤처':[-43,-19],'회전목마':[40,39],'황야의 무법자':[49,20],'키즈토리아':[56,-1],
+  '드래곤 와일드 슈팅':[43,-20],'어린이 범퍼카':[57,-32],'햇님달님':[40,-43],'점핑피쉬':[23,-47],
+  '언더씨킹덤':[7,-48],'유레카':[-10,-45],'스윙팡팡':[-25,-42],'매직붕붕카':[-42,-34],
+  '어린이동화극장':[5,-28],'카트라이더 레이싱 월드':[25,-26],
+  '스쿨푸드':[-34,4],'아라비안 바자 푸드':[-45,26],'롯데리아':[48,4],'카페·스낵 코너':[24,34],
+  '아라비안 바자':[-44,13],'포토스트리트':[34,47],'샤론캣 드레스':[49,34],'캐릭터 기프트샵':[57,18]
+ },
+ '2F':{
+  '후렌치레볼루션':[-22,5],'범퍼카':[25,8],
+  '퀴즈노스':[-40,20],'빈슈트루델':[-28,23],'앤티앤스 프레즐':[-12,24],'델리본':[8,23],'오이씨푸드':[28,22],
+  '위니비니':[-38,-3],'게임빌리지':[38,-4]
+ },
+ '3F':{
+  '콩X고질라 더 라이드':[-27,5],'월드모노레일':[27,4],
+  '공차':[-42,21],'김피라':[-23,23],'상하이':[1,23],'델키스':[28,20],
+  '타로카드':[-38,-5],'게임빌리지':[37,-5]
+ },
+ '4F':{
+  '풍선비행':[-25,8],'파라오의 분노':[9,12],'어크로스 다크':[31,12],
+  '요거트월드':[-42,25],'라라코스트':[-25,25],'부창제과':[-8,25],'아이스팩토리':[13,25],'뉴욕핫도그':[33,25],
+  '헬로키티 숍':[-39,-5],'전망대 게임장':[5,-5],'파라오짱 게임즈':[36,-5]
+ }
+};
 for(const floor of Object.keys(floorItems)){
-  const arr=floorItems[floor];
-  arr.forEach((it,i)=>{const p=gridPosition(i,arr.length);it.x=p.x;it.z=p.z;});
+  for(const it of floorItems[floor]){
+    const p=tracedFloorLayouts[floor]?.[it.name];
+    if(p){it.x=p[0];it.z=p[1];}
+    else {it.x=-48+(floorItems[floor].indexOf(it)%5)*24;it.z=55+Math.floor(floorItems[floor].indexOf(it)/5)*8;}
+  }
 }
+const islandLayout={
+ '아트란티스':[28,-130],'자이로스윙':[-43,-96],'쁘띠빵빵':[5,-78],'자이로드롭':[-48,-132],
+ '환타지드림':[43,-92],'혜성특급':[35,-113],'자이로스핀':[48,-119],'스톤익스프레스':[14,-88],
+ '아르카나라이드':[-17,-82],'에오스타워':[-5,-145],
+ '레이크뷰 다이닝':[23,-75],'매직아일랜드 스낵':[-27,-74],'아일랜드 카페':[48,-104],
+ '매직캐슬 트레져스':[0,-111]
+};
 const islandItems=facilityCatalog.filter(it=>it.floor==='매직아일랜드');
-islandItems.forEach((it,i)=>{
-  const a=(-Math.PI*.83)+(i/(islandItems.length))*Math.PI*1.66;
-  it.x=Math.cos(a)*44;it.z=-112+Math.sin(a)*31;
-});
+islandItems.forEach(it=>{const p=islandLayout[it.name];if(p){it.x=p[0];it.z=p[1];}});
+
 const facilities=[];
 const facilityMaterials={
   ride:mat(0x427b9e,.55),restaurant:mat(0xc98748,.65),shop:mat(0x8d6aa8,.6),service:mat(0x4c8b83,.7),
