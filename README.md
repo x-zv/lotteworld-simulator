@@ -1,15 +1,18 @@
 # Lotte World Simulator
 
-A browser-based, walkable 3D theme-park reconstruction prototype inspired by public photographs and official guide-map references for Lotte World Adventure and Magic Island.
+A browser-based, walkable 3D reconstruction prototype of Lotte World Adventure and Magic Island, rebuilt from user-supplied interior photographs and publicly available guide-map references.
 
 ## Current build
 
-- Elliptical half-dome roof with repeated metal ribs and horizontal glazing bands
-- Photo-inspired Adventure entrance facade with an inset arch, clock face, tiled stone palette, signage, columns, and side wings
-- Multi-level exterior facade mullions, structural piers, and gallery rail details
+- Long barrel-vault glass roof with repeated transverse steel arches, longitudinal purlins, glass panes, side aprons, and tall structural columns
+- Multi-level oval atrium galleries, inner and outer railings, balusters, support piers, and broad circulation promenade
+- Central 30 × 60 m ice-rink footprint, ice surface, perimeter boards, railings, and suspended circular lighting rig
+- Photo-inspired themed village facades: grand European-style palace frontage, half-timber houses, colored roofs, arched shop windows, rockwork backdrop, palm trees, and balloon-shaped lanterns
 - Magic Island landform, Seokchon Lake, stone approach bridge, and pastel Magic Castle with blue conical turrets, arched windows, trim, and finials
-- Distinct procedural geometry for recognizable attraction families: carousel, pirate ship, gyro rides, coaster loops, water rides, balloon flight, teacups, bumper cars, children’s rides, themed dark-ride facades, and more
-- Restaurant and shop storefronts with separate wall palettes, glazing, awnings, tables, and illuminated-style sign panels
+- Separate procedural attraction models and animated motion for carousel, pirate ship, gyro rides, coaster loops, water rides, balloon flight, teacups, bumper cars, children’s rides, and themed dark rides
+- Explicit track geometry and path-following vehicles for Atlantis, French Revolution, World Monorail, and water-ride routes
+- 63 anonymous animated guest figures across the rink, promenades, and galleries, including walkers, idle spectators, phone-photo gestures, and skaters; the player avatar is also a rigged multi-part human figure
+- Restaurant and shop storefronts with separate wall palettes, glazing, awnings, tables, and sign panels
 - Orbit camera controls, zoom, pan, reset view, and landmark labels
 - Seasonal parade system with three animated floats following a looped route inside the Adventure building
 - Season theme selected from the local calendar month; the current November 2026 build selects the winter `해피 크리스마스 퍼레이드` theme
@@ -46,7 +49,7 @@ Interaction behavior:
 - **Restaurants:** choose a sample menu category and play a short meal simulation.
 - **Shops and services:** open a facility-specific information or browsing panel.
 
-The catalog and 3D models are still a photo-matched approximation, not a surveyed or CAD-accurate replica. Representative structures now have distinct silhouettes and palettes, while less-photographed attractions use theme-specific procedural models. Exact dimensions, track centerlines, support placement, interior architecture, shopfront branding, and facility coordinates still need validation against close-up photographs or measured drawings. Facility placement is approximate rather than surveyed.
+The scene is a photo-matched approximation rather than a surveyed or CAD-accurate replica. The four user-supplied photographs establish the interior roof, central ice rink, circular galleries, themed village, tropical details, and crowd scale. Public guide-map information confirms facility names and general floor groupings, but the photographs do not reveal exact coordinates, clearances, structural dimensions, or every ride's track centerline. Those require measured plans and additional front/side/rear reference views. Guest figures are anonymous animated visitors, not copied identities of people in the photographs.
 
 ## Parade behavior
 
@@ -61,7 +64,7 @@ Season themes are selected automatically from the local calendar month. Winter, 
 
 ## Visual reference notes
 
-Public reference photos were used to guide the visual language of the Adventure entrance clock-and-arch facade, the blue-ribbed glass dome, Magic Castle's pale masonry and blue roofs, the French Revolution indoor loop, the Magic Island coaster/gyro rides, the Spanish Pirate Ship, Pharaoh's Fury entrance, and the balloon attraction.
+The four supplied interior photographs were used as the primary references for the long glazed barrel roof, repeating arch frames, central ice rink, oval gallery railings, pastel village facades, palm trees, balloon lanterns, and guest density. Additional public references were used for ride families and the official guide-map facility groupings.
 
 - Adventure entrance: https://ak-d.tripcdn.com/images/1mi0j224x98xf99dq6B37.jpg
 - Magic Castle: https://cf.creatrip.com/original/spot/14619/0e2ync2pv1vojzfzowgy8ip5blg225kl.jpg
@@ -72,10 +75,10 @@ Public reference photos were used to guide the visual language of the Adventure 
 
 ## Roadmap
 
-1. Refine each remaining attraction using close-up, front/side/rear reference photographs.
-2. Replace approximate footprints and coordinates with measured site-plan geometry where reliable measurements are available.
-3. Build detailed interiors, themed facades, bridges, signage, landscaping, and lighting.
-4. Expand ride-specific motion, queue logic, operating status, and guest simulation.
+1. Replace approximate facility coordinates with measured floor-plan positions and verify walkway widths and clearances.
+2. Trace each remaining ride's full track centerline, elevation profile, bank angle, supports, station, and vehicle direction from multi-angle references.
+3. Refine building proportions, storefront ornament, interior materials, roof panel dimensions, and gallery balustrades.
+4. Expand guest behavior with collision avoidance, groups, queues, ice-skating paths, and attraction-specific boarding/exit choreography.
 
 ## Accuracy note
 
