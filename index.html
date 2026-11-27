@@ -819,6 +819,60 @@ function buildFacilityModel(f){
       for(const x of [-2,2])box(g,x,2.4,2.72,.14,2.7,.18,gold);
       const marquee=new THREE.Mesh(new THREE.PlaneGeometry(5.8,1.2),new THREE.MeshBasicMaterial({map:makeCanvasSign(f.name,'THE RIDE','#233c54','#f0c76a')}));
       marquee.position.set(0,5,2.7);g.add(marquee);
+    }else if(/드래곤와일드슈팅/.test(f.name)){
+      const fortress=mat(0x777d82,.85),fortressTrim=mat(0xd6c6a8,.8),dragonGreen=mat(0x477b55,.72);
+      box(g,0,2,0,6.5,4.6,3.2,fortress);
+      box(g,-2.4,4.4,0,1.4,2.8,3.5,fortressTrim);box(g,2.4,4.4,0,1.4,2.8,3.5,fortressTrim);
+      for(const x of [-2.3,2.3]){
+        cyl(g,x,6.2,0,.85,.85,2.6,fortress,16);
+        const roof=new THREE.Mesh(new THREE.ConeGeometry(1.05,1.8,8),rideAccent);roof.position.set(x,8.4,0);g.add(roof);
+      }
+      const dragon=new THREE.Group();dragon.position.set(0,4,1.6);g.add(dragon);
+      sphere(dragon,0,0,0,.95,.48,1.55,dragonGreen);
+      sphere(dragon,0,.35,1.15,.58,.52,.7,dragonGreen);
+      sphere(dragon,-.18,.45,1.65,.12,.1,.12,rideYellow);sphere(dragon,.18,.45,1.65,.12,.1,.12,rideYellow);
+      curveTube(dragon,[[0,0,-1.1],[.9,-.1,-1.65],[1.5,.2,-2.0]],.18,dragonGreen,20);
+      for(const side of [-1,1]){
+        const wingShape=new THREE.Shape();wingShape.moveTo(0,0);wingShape.lineTo(side*1.8,1.35);wingShape.lineTo(side*1.35,-.25);wingShape.lineTo(0,-.15);wingShape.closePath();
+        const wing=new THREE.Mesh(new THREE.ShapeGeometry(wingShape),mat(0x9b493f,.65));wing.position.y=.2;dragon.add(wing);
+      }
+      const entrance=new THREE.Mesh(new THREE.PlaneGeometry(2.2,2.8),new THREE.MeshBasicMaterial({color:0x1c2a35}));entrance.position.set(0,2.5,1.72);g.add(entrance);
+    }else if(/황야의 무법자/.test(f.name)){
+      const timber=mat(0x75472f,.85),timberLight=mat(0xb17a4b,.8),saloon=mat(0xe6d0a6,.8);
+      box(g,0,1.4,0,6,3.2,4,timber);
+      box(g,0,3.2,0,6.6,.35,4.6,timberLight);
+      for(const x of [-2.5,-1.4,1.4,2.5])box(g,x,1.3,2.08,.22,2.8,.25,saloon);
+      box(g,0,2.3,2.3,1.1,1.5,.18,timberLight);
+      for(const x of [-2.8,2.8])box(g,x,4.2,0,.25,2,.25,timberLight);
+      const saloonSign=new THREE.Mesh(new THREE.PlaneGeometry(5.8,1.25),new THREE.MeshBasicMaterial({map:makeCanvasSign('WILD WEST','OUTLAW TOWN','#643b2d','#f3d3a1')}));
+      saloonSign.position.set(0,5.5,2.35);g.add(saloonSign);
+      for(let j=0;j<3;j++){cyl(g,-1.8+j*1.8,.65,-2.55,.48,.48,1.1,timberLight,16);}
+      const roof=new THREE.Mesh(new THREE.ConeGeometry(4.6,1.8,4),timber);roof.rotation.y=Math.PI/4;roof.position.y=5.05;g.add(roof);
+    }else if(/환타지드림|아르카나라이드/.test(f.name)){
+      const fantasyStone=mat(0x4a526f,.75),fantasyPurple=mat(0x8056a0,.5),fantasyGold=mat(0xe2bb62,.4);
+      box(g,0,2.4,0,6,4.4,3.6,fantasyStone);
+      box(g,0,5,0,6.5,.5,4.1,fantasyPurple);
+      const arch=[];for(let i=0;i<=20;i++){const a=Math.PI-i*Math.PI/20;arch.push([Math.cos(a)*2.5,2.3+Math.sin(a)*2.5,1.86]);}
+      curveTube(g,arch,.35,fantasyGold,40);
+      const darkDoor=new THREE.Mesh(new THREE.PlaneGeometry(4.6,3.7),new THREE.MeshBasicMaterial({color:0x151d32}));darkDoor.position.set(0,2.25,1.78);g.add(darkDoor);
+      for(let j=0;j<8;j++){const a=j*Math.PI/4;sphere(g,Math.cos(a)*2.9,4.8,Math.sin(a)*1.2,.25,.25,.25,j%2?fantasyGold:fantasyPurple);}
+      if(/아르카나라이드/.test(f.name)){
+        const spinner=new THREE.Group();spinner.position.y=1.1;g.add(spinner);
+        cyl(spinner,0,0,0,1.5,1.5,.35,fantasyGold,32);
+        for(let j=0;j<6;j++){const a=j*Math.PI/3,x=Math.cos(a)*2.2,z=Math.sin(a)*2.2;beamBetween(spinner,[0,.1,0],[x,.1,z],.14,fantasyGold);sphere(spinner,x,.6,z,.62,.35,.6,fantasyPurple);}
+        f.motionPart=spinner;f.motionType='spin';rideMotionItems.push(f);
+      }
+    }else if(/콩X고질라|고질라/.test(f.name)){
+      const cityMat=mat(0x52616c,.9),monsterMat=mat(0x3d6259,.85);
+      box(g,0,1.5,0,6.5,3,4,cityMat);
+      for(let j=0;j<5;j++){const x=-2.6+j*1.3;box(g,x,4+(j%2)*1.1,-.4,.8,2+(j%2),.85,mat(0x354b62,.65));}
+      const monster=new THREE.Group();monster.position.set(0,3,1.35);g.add(monster);
+      sphere(monster,0,0,0,1.1,1.4,.7,monsterMat);
+      sphere(monster,0,1.35,.28,.55,.55,.55,monsterMat);
+      sphere(monster,0,1.55,.77,.34,.3,.36,monsterMat);
+      for(let j=0;j<6;j++){const spike= new THREE.Mesh(new THREE.ConeGeometry(.22,.8,5),mat(0x83a69a,.8));spike.position.set(0,1.1-j*.25,-.45-j*.09);monster.add(spike);}
+      beamBetween(monster,[-.8,.2,0],[-1.6,-.1,.3],.16,monsterMat);
+      beamBetween(monster,[.8,.2,0],[1.5,-.2,.5],.16,monsterMat);
     }else if(/파라오/.test(f.name)){
       const egyptStone=mat(0xc9bda5,.95),egyptBlue=mat(0x1b4e70,.55),egyptGold=mat(0xc9a34c,.45);
       box(g,0,1,0,6,7,2.5,egyptStone);
