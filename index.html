@@ -1103,17 +1103,17 @@ function buildFacilityModel(f){
       beamBetween(g,[-4,.8,0],[4,.8,0],.8,rideAccent);
       const arm=new THREE.Group();arm.position.set(0,pivotHeight,0);g.add(arm);
       beamBetween(arm,[0,0,0],[0,-13.4,0],.62,rideAccent);
-      const hub=cyl(arm,0,-13.6,0,1.4,1.4,.7,rideYellow,40);
+      const seatAssembly=new THREE.Group();seatAssembly.name='gyro-seat-assembly';seatAssembly.position.set(0,-14,0);arm.add(seatAssembly);
+      cyl(seatAssembly,0,.4,0,1.4,1.4,.7,rideYellow,40);
       const seatRing=new THREE.Mesh(new THREE.TorusGeometry(7.4,.52,12,100),mat(0xd2dbe0,.48));
-      seatRing.name='gyro-seat-ring';
-      seatRing.rotation.x=Math.PI/2;seatRing.position.y=-14;arm.add(seatRing);
+      seatRing.rotation.x=Math.PI/2;seatAssembly.add(seatRing);
       const innerRing=new THREE.Mesh(new THREE.TorusGeometry(5.9,.2,8,100),supportTrim);
-      innerRing.rotation.x=Math.PI/2;innerRing.position.y=-14;arm.add(innerRing);
+      innerRing.rotation.x=Math.PI/2;seatAssembly.add(innerRing);
       for(let j=0;j<40;j++){
         const a=j*Math.PI*2/40,x=Math.cos(a)*7.4,z=Math.sin(a)*7.4;
-        beamBetween(arm,[Math.cos(a)*1.4,-13.7,Math.sin(a)*1.4],[x,-14,z],.08,supportTrim);
-        const seat=box(arm,x,-14,z,1.0,.75,.95,mat(j%2?0x394a59:0xd7e0e4,.45));seat.rotation.y=-a;
-        box(arm,x,-13.43,z,.78,.18,.72,rideAccent);
+        beamBetween(seatAssembly,[Math.cos(a)*1.4,.3,Math.sin(a)*1.4],[x,0,z],.08,supportTrim);
+        const seat=box(seatAssembly,x,0,z,1.0,.75,.95,mat(j%2?0x394a59:0xd7e0e4,.45));seat.rotation.y=-a;
+        box(seatAssembly,x,.57,z,.78,.18,.72,rideAccent);
       }
       arm.userData.pivotHeight=pivotHeight;
       f.motionPart=arm;f.motionType='swing';rideMotionItems.push(f);
@@ -2137,11 +2137,8 @@ function updateRideFirstPersonCamera(ride,elapsedSec,state){
    new THREE.Vector3(Math.cos(seatAngle)*3.85,1.15,Math.sin(seatAngle)*3.85),
    new THREE.Vector3(Math.cos(seatAngle),-.09,Math.sin(seatAngle)));
  }else if(f.motionType==='swing'){
-  const spin=elapsedSec*.55;
-  const angle=spin;
-  const seat=new THREE.Vector3(Math.cos(angle)*7.4,-14.1,Math.sin(angle)*7.4);
-  const radial=new THREE.Vector3(Math.cos(angle),.03,Math.sin(angle));
-  pose=localRideCameraPose(vehicle,seat,radial,new THREE.Vector3(0,1,0));
+  const seatAssembly=vehicle.getObjectByName('gyro-seat-assembly')||vehicle;
+  pose=localRideCameraPose(seatAssembly,new THREE.Vector3(7.4,.12,0),new THREE.Vector3(1,.03,0),new THREE.Vector3(0,1,0));
  }else if(f.motionType==='ship'){
   pose=localRideCameraPose(vehicle,new THREE.Vector3(0,-5.15,.75),new THREE.Vector3(0,0,1),new THREE.Vector3(0,1,0));
  }else if(f.motionType==='spin'||f.motionType==='carousel'){
@@ -2180,9 +2177,11 @@ function startRide(f){
     path=f.motionPath;
   }else if(f.motionPart&&['drop','swing','ship','spin','carousel'].includes(f.motionType)){
     vehicle=f.motionPart.clone(true);
-    // Keep the model's internal pivot/arm offset inside the clone; only move the ride root to the facility origin.
-    vehicleOffsetY=0;
-    vehicle.position.set(f.x,origin.y,f.z);
+    const wholeRideModel=f.motionPart===f.group;
+    const pivotOffset=wholeRideModel?new THREE.Vector3():f.motionPart.position.clone();
+    if(f.motionType==='drop')pivotOffset.y=0;
+    vehicleOffsetY=pivotOffset.y;
+    vehicle.position.set(f.x+pivotOffset.x,origin.y+pivotOffset.y,f.z+pivotOffset.z);
     vehicle.rotation.set(0,0,0);
     scene.add(vehicle);
     parent=scene;
@@ -2266,8 +2265,8 @@ function updateRide(now){
     const angle=Math.sin(phase)*amplitude*envelope;
     r.vehicle.rotation.z=angle;
     r.vehicle.rotation.y=0;
-    const passengerRing=r.vehicle.getObjectByName('gyro-seat-ring');
-    if(passengerRing)passengerRing.rotation.y=elapsedSec*.55;
+    const passengerAssembly=r.vehicle.getObjectByName('gyro-seat-assembly');
+    if(passengerAssembly)passengerAssembly.rotation.y=elapsedSec*.55;
     const focusY=f.motionType==='swing'?-14:-5.7;
     target=new THREE.Vector3(r.vehicle.position.x,r.vehicle.position.y+focusY,r.vehicle.position.z);
     const angularVelocity=amplitude*(Math.PI*2/cycleSeconds)*Math.cos(phase)*envelope;
@@ -2383,7 +2382,7 @@ function updateFacilityRideMotion(now){
       const amp=THREE.MathUtils.degToRad(spec.maxAngleDeg||(f.motionType==='ship'?75:96));
       const phase=elapsed*Math.PI*2/cycleSeconds;
       f.motionPart.rotation.z=Math.sin(phase)*amp*envelope;
-      const ring=f.motionPart.getObjectByName('gyro-seat-ring');
+      const ring=f.motionPart.getObjectByName('gyro-seat-assembly');
       if(ring)ring.rotation.y=elapsed*.55;
     }else if(f.motionType==='spin'||f.motionType==='carousel')f.motionPart.rotation.y=t*.9;
     else if(f.motionType==='drop'){
