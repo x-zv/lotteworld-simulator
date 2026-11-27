@@ -172,27 +172,129 @@ for(let i=-8;i<=8;i++){if(Math.abs(i)>3){cyl(scene,i*10,0,91,2.1,2.1,2.8,mat(0x8
 // large Adventure building: broad podium, curved glass facade, ribbed dome
 // Walkable stacked floor plates replace the previous solid blockout mass.
 const FLOOR_Y={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5};
-for(const y of Object.values(FLOOR_Y)) box(scene,0,y-.7,20,145,.7,86,mats.concrete);
+for(const y of Object.values(FLOOR_Y)) box(scene,0,y-.7,4,145,.7,140,mats.concrete);
 const facadeMat=new THREE.MeshPhysicalMaterial({color:0xb9d2dc,transparent:true,opacity:.24,roughness:.32,metalness:.08});
-box(scene,-73,-8,20,2,44,92,facadeMat);box(scene,73,-8,20,2,44,92,facadeMat);
-box(scene,0,-8,-25,146,44,2,facadeMat);
+box(scene,-73,-8,4,2,44,140,facadeMat);box(scene,73,-8,4,2,44,140,facadeMat);
+box(scene,0,-8,-66,146,44,2,facadeMat);
 box(scene,-48,-8,66,50,44,2,facadeMat);box(scene,48,-8,66,50,44,2,facadeMat);
-for(const y of [8.5,17.5,26.5]){box(scene,-73,y,-25,2,.35,92,mats.gold);box(scene,73,y,-25,2,.35,92,mats.gold);}
+for(const y of [8.5,17.5,26.5]){box(scene,-73,y,4,2,.35,140,mats.gold);box(scene,73,y,4,2,.35,140,mats.gold);}
 for(let x=-69;x<=69;x+=12){box(scene,x,2,-26,1.1,16,1.2,mats.gold)}
-// Recognizable elliptical glass half-dome with repeated metal ribs and horizontal glazing bands.
-const domeGeo=new THREE.SphereGeometry(1,72,36,0,Math.PI*2,0,Math.PI/2);
-const dome=new THREE.Mesh(domeGeo,mats.glass);dome.position.set(0,19,18);dome.scale.set(69,34,42);dome.castShadow=false;scene.add(dome);
-const domeRibMat=mat(0x8b9eaa,.48),domeBandMat=mat(0xd9e1e3,.38);
-for(let i=0;i<32;i++){
-  const a=i*Math.PI*2/32,pts=[];
-  for(let j=0;j<=24;j++){const p=j/24*Math.PI/2;pts.push([69*Math.sin(p)*Math.cos(a),19+34*Math.cos(p),18+42*Math.sin(p)*Math.sin(a)]);}
-  curveTube(scene,pts,.42,domeRibMat,48);
+// Lotte World Adventure's long barrel-vault glass roof, modeled from the supplied interior photos.
+const domeRibMat=mat(0xb7c5c2,.42),domeBandMat=mat(0x9eaeaa,.46);
+const roofGlass=new THREE.MeshPhysicalMaterial({color:0xc5ddd8,roughness:.24,metalness:.08,transparent:true,opacity:.34,side:THREE.DoubleSide});
+const roofStartZ=-65,roofEndZ=73,roofSpan=roofEndZ-roofStartZ,roofHalfWidth=70,roofSpringY=19,roofRise=39;
+const roofCurveY=a=>roofSpringY+roofRise*Math.sin(a);
+const roofCurveX=a=>roofHalfWidth*Math.cos(a);
+// Continuous glazed barrel surface, divided into a fine pane grid.
+{
+ const rows=42,cols=36,positions=[],indices=[];
+ for(let r=0;r<=rows;r++){
+  const z=roofStartZ+roofSpan*r/rows;
+  for(let c=0;c<=cols;c++){
+   const a=Math.PI*c/cols;
+   positions.push(roofCurveX(a),roofCurveY(a),z);
+  }
+ }
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const a=r*(cols+1)+c,b=a+cols+1;
+  indices.push(a,b,a+1,b,b+1,a+1);
+ }
+ const geom=new THREE.BufferGeometry();
+ geom.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ geom.setIndex(indices);geom.computeVertexNormals();
+ const glassShell=new THREE.Mesh(geom,roofGlass);glassShell.castShadow=false;glassShell.receiveShadow=true;scene.add(glassShell);
 }
-for(const p of [.28,.52,.75,.93]){
-  const pts=[];for(let i=0;i<=80;i++){const a=i/80*Math.PI*2;pts.push([69*p*Math.cos(a),19+34*Math.sqrt(1-p*p),18+42*p*Math.sin(a)]);}
-  curveTube(scene,pts,.28,domeBandMat,100);
+// Repeated transverse portal ribs and longitudinal steel purlins.
+for(let z=roofStartZ;z<=roofEndZ;z+=5.4){
+ const pts=[];for(let j=0;j<=42;j++){const a=Math.PI*j/42;pts.push([roofCurveX(a),roofCurveY(a),z]);}
+ curveTube(scene,pts,.42,domeRibMat,64);
 }
-cyl(scene,0,18.55,18,69,69,1,domeRibMat,96);
+for(let j=1;j<18;j++){
+ const a=Math.PI*j/18,pts=[];
+ for(let k=0;k<=48;k++){const z=roofStartZ+roofSpan*k/48;pts.push([roofCurveX(a),roofCurveY(a),z]);}
+ curveTube(scene,pts,.22,domeBandMat,64);
+}
+// Deep green-blue roof aprons and tall pale structural columns on both sides.
+const roofApron=mat(0x527a79,.8),columnStone=mat(0xd8ddd5,.65);
+box(scene,0,18.2,roofStartZ-1,142,4,2,roofApron);
+box(scene,0,18.2,roofEndZ+1,142,4,2,roofApron);
+for(const x of [-67,67]){
+ box(scene,x,11,4,2.2,16,140,roofApron);
+ for(let z=roofStartZ+6;z<roofEndZ;z+=13.5){
+  cyl(scene,x,1.0,z,.9,1.05,18,columnStone,20);
+  cyl(scene,x,18.7,z,1.45,1.45,.6,domeBandMat,24);
+  cyl(scene,x,.8,z,1.3,1.3,.55,domeBandMat,24);
+ }
+}
+box(scene,0,18.8,roofStartZ,136,.7,.8,domeBandMat);
+box(scene,0,18.8,roofEndZ,136,.7,.8,domeBandMat);
+
+const atriumCenterZ=12;
+const paleGallery=mat(0xe9e7df,.72),galleryUnderside=mat(0xa7b4b0,.72),galleryRail=mat(0xf2f0e8,.48),railDark=mat(0x778782,.55);
+function ellipseLoop(cx,cy,cz,rx,rz,segments=160){
+ const pts=[];for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2;pts.push([cx+Math.cos(a)*rx,cy,cz+Math.sin(a)*rz]);}
+ return pts;
+}
+function addOvalGallery(level,outerX,outerZ,innerX,innerZ){
+ const shape=new THREE.Shape();
+ shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false,0);
+ const hole=new THREE.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true,0);shape.holes.push(hole);
+ const deck=new THREE.Mesh(new THREE.ShapeGeometry(shape,96),paleGallery);
+ deck.rotation.x=-Math.PI/2;deck.position.set(0,level,atriumCenterZ);deck.receiveShadow=true;deck.castShadow=true;scene.add(deck);
+ const underside=new THREE.Mesh(new THREE.ShapeGeometry(shape,96),galleryUnderside);
+ underside.rotation.x=Math.PI/2;underside.position.set(0,level-.35,atriumCenterZ);scene.add(underside);
+ for(const [rx,rz] of [[outerX,outerZ],[innerX,innerZ]]){
+  curveTube(scene,ellipseLoop(0,level+1.25,atriumCenterZ,rx,rz),.22,galleryRail,180);
+  curveTube(scene,ellipseLoop(0,level+.18,atriumCenterZ,rx,rz),.14,railDark,180);
+  for(let i=0;i<96;i++){
+   const a=i/96*Math.PI*2,x=Math.cos(a)*rx,z=atriumCenterZ+Math.sin(a)*rz;
+   cyl(scene,x,level+.2,z,.065,.065,1.05,galleryRail,8);
+  }
+ }
+ for(let i=0;i<16;i++){
+  const a=i*Math.PI*2/16,x=Math.cos(a)*(outerX-1),z=atriumCenterZ+Math.sin(a)*(outerZ-1);
+  cyl(scene,x,.5,z,.75,.9,level-.9,columnStone,16);
+  cyl(scene,x,level-.6,z,1.05,1.05,.45,galleryRail,20);
+ }
+}
+function addOvalPromenade(level,outerX,outerZ,innerX,innerZ,material){
+ const shape=new THREE.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false,0);
+ const hole=new THREE.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true,0);shape.holes.push(hole);
+ const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape,96),material);mesh.rotation.x=-Math.PI/2;mesh.position.set(0,level,atriumCenterZ);mesh.receiveShadow=true;scene.add(mesh);
+}
+const promenadeMat=mat(0xc9b9a7,.88),tileLight=mat(0xe6dfd4,.9),tileRose=mat(0xb98e7e,.88);
+addOvalPromenade(.54,36,25,18.2,11.2,promenadeMat);
+addOvalGallery(9.7,49,36,34,23.3);
+addOvalGallery(18.9,60,45,49.5,35.6);
+// Central 30-by-60 metre skating field: photographed proportions, scaled consistently to the scene.
+const rinkApron=new THREE.Mesh(new THREE.CircleGeometry(1,128),mat(0x9da9a4,.7));
+rinkApron.rotation.x=-Math.PI/2;rinkApron.scale.set(19.2,1,10.1);rinkApron.position.set(0,.66,atriumCenterZ);scene.add(rinkApron);
+const iceMaterial=new THREE.MeshPhysicalMaterial({color:0xd9f4f5,roughness:.12,metalness:.14,clearcoat:.8,clearcoatRoughness:.12});
+const ice=new THREE.Mesh(new THREE.CircleGeometry(1,128),iceMaterial);
+ice.rotation.x=-Math.PI/2;ice.scale.set(18.0,1,9.0);ice.position.set(0,.78,atriumCenterZ);ice.receiveShadow=true;scene.add(ice);
+curveTube(scene,ellipseLoop(0,1.1,atriumCenterZ,18.5,9.5),.38,mat(0xf7f7ee,.5),180);
+curveTube(scene,ellipseLoop(0,2.05,atriumCenterZ,18.5,9.5),.18,mat(0xe8f4f1,.5),180);
+for(let i=0;i<64;i++){
+ const a=i/64*Math.PI*2,x=Math.cos(a)*18.5,z=atriumCenterZ+Math.sin(a)*9.5;
+ cyl(scene,x,1.1,z,.07,.07,.9,galleryRail,8);
+}
+for(let i=0;i<8;i++){
+ const a=i*Math.PI/4;
+ const x=Math.cos(a)*14.5,z=atriumCenterZ+Math.sin(a)*7.1;
+ const light=cyl(scene,x,1.2,z,.08,.08,.05,mat(0x8ddfe8,.2),8);
+}
+// Broad circular lighting and show rig suspended above the rink.
+const overheadRig=new THREE.Group();overheadRig.position.set(0,33,atriumCenterZ);scene.add(overheadRig);
+const rigGold=mat(0xc7b27e,.45),rigMetal=mat(0x465c63,.42);
+const rigRing=new THREE.Mesh(new THREE.TorusGeometry(13.5,.48,12,120),rigGold);rigRing.rotation.x=Math.PI/2;overheadRig.add(rigRing);
+const innerRigRing=new THREE.Mesh(new THREE.TorusGeometry(8.8,.25,8,96),rigMetal);innerRigRing.rotation.x=Math.PI/2;overheadRig.add(innerRigRing);
+for(let i=0;i<24;i++){
+ const a=i*Math.PI*2/24,x=Math.cos(a)*13.5,z=Math.sin(a)*13.5;
+ beamBetween(overheadRig,[0,0,0],[x,0,z],.09,rigMetal);
+ const lamp=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8),mat(0xffe6a5,.2));lamp.position.set(x,-.45,z);overheadRig.add(lamp);
+}
+cyl(overheadRig,0,-1.1,0,.5,.5,2,rigMetal,24);
+
 // Signature Adventure entrance: pale tiled facade, inset glazed arch, clock face and burgundy sign.
 const stone=mat(0xd8d0c5,.8),stoneLight=mat(0xf1e9dd,.7),roseStone=mat(0xd7b9b3,.8),darkGlass=mat(0x22313e,.28),burgundy=mat(0x713344,.42),copper=mat(0xb58d55,.42);
 box(scene,0,1,73,66,29,4,stone);
