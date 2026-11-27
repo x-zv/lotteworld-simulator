@@ -910,6 +910,27 @@ const rideSpecs={
  }
 };
 for(const f of facilityCatalog) f.rideSpec=rideSpecs[f.name]||null;
+const officialRideVideos={
+ '아트란티스':'https://www.youtube.com/watch?v=Mkb5rvyeJBQ',
+ '후렌치레볼루션':'https://www.youtube.com/watch?v=yBQsfQS8a6U',
+ '자이로드롭':'https://www.youtube.com/watch?v=B7DYLBaYOzg',
+ '자이로스윙':'https://www.youtube.com/watch?v=wB5_ZbwB-ys',
+ '자이로스핀':'https://www.youtube.com/watch?v=RoZAnGja_Ww',
+ '후룸라이드':'https://www.youtube.com/watch?v=JeykTouSEd8',
+ '파라오의 분노':'https://www.youtube.com/watch?v=Y9PU9hxLBjM',
+ '혜성특급':'https://www.youtube.com/watch?v=oN_IqwnDzvE',
+ '회전바구니':'https://www.youtube.com/watch?v=yJ5sbO-xCa0',
+ '신밧드의 모험':'https://www.youtube.com/watch?v=PCFx0Lm1bxk'
+};
+for(const f of facilityCatalog){
+ if(f.kind!=='ride')continue;
+ f.rideSpec=f.rideSpec||{};
+ f.rideSpec.officialVideoUrl=officialRideVideos[f.name]||null;
+ f.rideSpec.pathEvidence=f.rideSpec.officialVideoUrl
+  ?'롯데월드 공식 채널 영상 링크를 연결했습니다. 영상에서 확인되지 않는 전체 트랙 좌표·가림 구간은 근사 모델입니다.'
+  :'공식 영상 또는 실측 중심선을 확인하지 못해 안내맵의 시설 설명을 바탕으로 한 별도 근사 경로입니다.';
+}
+
 
 const facilities=[];
 const facilityMaterials={
@@ -1774,7 +1795,9 @@ function showFacility(f){
     const profileNote=spec.speedProfile?'<p class="simNote">트랙 길이·최고속도·총 운행시간은 공개 제원 기준입니다. 구간별 속도 변화와 세부 레일 좌표는 공개 자료가 없어 시뮬레이션용 보간·사진 기반 근사입니다.</p>':'';
     const motionNote=spec.maxSpeedKmh&&!spec.speedProfile?'<p class="simNote">최고속도는 공개 제원 표기값이며, 시간별 속도·운행 순서는 시뮬레이션용 추정입니다.</p>':'';
     const sourceNote=spec.source?'<p class="simNote">자료: '+escHtml(spec.source)+'</p>':'';
-    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p>'+specsHtml+(spec.elements?'<p>'+escHtml(spec.elements)+'</p>':'')+timingNote+profileNote+motionNote+sourceNote+'<div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
+    const videoNote=spec.officialVideoUrl?'<p class="simNote"><a href="'+escHtml(spec.officialVideoUrl)+'" target="_blank" rel="noopener noreferrer" style="color:#9ed8f0;text-decoration:underline">롯데월드 공식 탑승 영상 보기 ↗</a></p>':'';
+    const pathEvidenceNote='<p class="simNote">'+escHtml(spec.pathEvidence||'세부 트랙 좌표는 공개 실측 자료가 없어 근사 모델입니다.')+'</p>';
+    openModal('<div class="modalEyebrow">'+escHtml(f.floor)+' · ATTRACTION</div><h2>'+escHtml(f.name)+'</h2><p>'+escHtml(rideDescription(f))+'</p>'+specsHtml+(spec.elements?'<p>'+escHtml(spec.elements)+'</p>':'')+timingNote+profileNote+motionNote+sourceNote+videoNote+pathEvidenceNote+'<div class="modalActions"><button class="primary" id="doRide">탑승하기</button><button id="cancelModal">취소</button></div>');
     document.querySelector('#doRide').onclick=()=>{closeModal();startRide(f)};
     document.querySelector('#cancelModal').onclick=closeModal;
   }else if(f.kind==='restaurant'){
