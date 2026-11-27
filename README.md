@@ -49,7 +49,20 @@ Interaction behavior:
 - **Restaurants:** choose a sample menu category and play a short meal simulation.
 - **Shops and services:** open a facility-specific information or browsing panel.
 
-The scene is a photo-matched approximation rather than a surveyed or CAD-accurate replica. The four user-supplied photographs establish the interior roof, central ice rink, circular galleries, themed village, tropical details, and crowd scale. Public guide-map information confirms facility names and general floor groupings, but the photographs do not reveal exact coordinates, clearances, structural dimensions, or every ride's track centerline. Those require measured plans and additional front/side/rear reference views. Guest figures are anonymous animated visitors, not copied identities of people in the photographs.
+The scene is a photo-matched approximation rather than a surveyed or CAD-accurate replica. The four user-supplied photographs establish the interior roof, central ice rink, circular galleries, themed village, tropical details, and crowd scale. Public guide-map information confirms facility names and general floor groupings. The published isometric map is used to trace relative placement, not to claim exact building coordinates or walkway widths. Exact coordinates, clearances, structural dimensions, and every ride's track centerline require measured plans or additional multi-angle reference views. Guest figures are anonymous animated visitors, not copied identities of people in the photographs.
+
+
+## Map coordinates and ride motion
+
+The current attraction catalog follows the 2026 Korean guide-map names and floor groupings. The relative positions are manually traced from publicly available isometric guide-map artwork and anchored around the entrance, bridge, island shoreline, and 30 × 60 m ice rink. These are local simulation coordinates, not surveyed metre coordinates, GPS positions, or CAD measurements. A measured architectural floor plan is still required to claim exact clearances and facility coordinates.
+
+Ride values currently shown in the simulator:
+- **Atlantis:** 670 m track, 75 km/h maximum, 22 m height, 72° steep section, 8-seat boat, and approximately 108 seconds from the cited coaster database references. Its 3D route is a photo/map-informed approximation; the vehicle follows that route using a 670 m display-distance profile.
+- **French Revolution:** approximately 630 m, 70 km/h maximum, 28 m height, one 360° inversion, and 105 seconds from Coaster.cloud. Its modeled path contains a chain lift, vertical loop, and a 540° horizontal helix; exact track centerline and intermediate speed trace are not publicly measured.
+- **Gyro Swing:** 27 m attraction height, 32 m top height, 96° maximum swing angle, 83 km/h listed maximum, 40 riders, and about 100 seconds from a secondary published reference. Its amplitude envelope and time-by-time speed are simulated approximations.
+- **Gyro Drop:** 70 m tower and 100 km/h listed maximum from the official guide map. The cycle length and acceleration profile are simulator estimates, not a published operating telemetry trace.
+
+Boarding clones the facility vehicle, places the visitor in its seat area, moves the vehicle along the modeled track or ride motion, follows it with the camera, and displays current speed, progress, and elapsed time. For rides without published speed/duration data, the card explicitly identifies their motion as a simulation estimate.
 
 ## Parade behavior
 
@@ -72,6 +85,10 @@ The four supplied interior photographs were used as the primary references for t
 - Spanish Pirate Ship: https://imagel.sekainavi.com/images/templates/SEOUL/1009385/dd8f89dd5eba2907_S.jpg
 - Balloon Flight: https://res.klook.com/image/upload/fl_lossy.progressive/q_auto/f_auto/c_fill/blogen/5a165c5f-Lotte-World-Seoul-Theme-Park.jpg
 - Official 2025 guide map: https://adventure.lotteworld.com/cmm/download.do?subPath=2025_Guidemap_eng.pdf
+- 2026 Korean guide-map listing: https://www.scribd.com/document/1072853286/2026-%EB%A1%AF%EB%8D%B0%EC%9B%94%EB%93%9C-%EA%B0%80%EC%9D%B4%EB%93%9C%EB%A7%B5-%EA%B5%AD%EB%AC%B8
+- Published isometric map artwork used only for relative placement tracing: https://javamilk.com/img/kr-lotte-world-adventure-guide-map.pdf
+- Atlantis ride data: https://data.coaster.cloud/en/attractions/lotte-world-atlantis
+- French Revolution ride data: https://data.coaster.cloud/en/attractions/49eeee89-french-revolution-hulenchilebollusyeon
 
 ## Roadmap
 
