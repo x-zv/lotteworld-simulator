@@ -61,6 +61,15 @@ button:hover{background:#24415a}
   #interactionPrompt{bottom:175px;font-size:11px}
   .modalCard{padding:21px 17px}
 }
+
+#rideHUD{display:none;position:fixed;z-index:26;left:50%;bottom:18px;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));padding:12px 14px;border-radius:15px;background:#0b1827ee;color:#eef6fb;border:1px solid #ffffff35;box-shadow:0 12px 36px #0007;backdrop-filter:blur(12px);font-size:12px;font-variant-numeric:tabular-nums}
+#rideHUD.active{display:block}
+.rideHudTop,.rideHudSpeed,.rideHudBottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rideHudTop strong{font-size:13px}.rideHudTop span,.rideHudBottom span{color:#b7c8d6}
+.rideHudSpeed{margin-top:8px}.rideHudSpeed strong{font-size:22px;color:#ffe0a1}.rideHudSpeed span:last-child{color:#b7c8d6}
+.rideHudTrack{height:6px;border-radius:8px;background:#ffffff22;margin:9px 0 7px;overflow:hidden}
+#rideHudFill{height:100%;width:0;background:linear-gradient(90deg,#63b9d4,#f0c778);border-radius:8px}
+@media(max-width:700px){#rideHUD{bottom:175px}.rideHudSpeed strong{font-size:19px}}
 </style>
 </head>
 <body>
@@ -88,7 +97,7 @@ button:hover{background:#24415a}
     <div id="modalBody"></div>
   </div>
 </div>
-<div id="toast"></div>
+<div id="toast"></div><div id="rideHUD" aria-live="polite"><div class="rideHudTop"><strong id="rideHudName">탑승 중</strong><span id="rideHudClock">00:00</span></div><div class="rideHudSpeed"><span>현재 속도</span><strong id="rideHudSpeed">0 km/h</strong><span id="rideHudMax">최고 —</span></div><div class="rideHudTrack"><div id="rideHudFill"></div></div><div class="rideHudBottom"><span id="rideHudDistance">0 / — m</span><span id="rideHudPhase">출발 준비</span></div></div>
 <script type="importmap">
 {
   "imports": {
@@ -837,53 +846,90 @@ for(const f of ['B1F','1F','2F','3F','4F']) floorItems[f]=facilityCatalog.filter
 // Facility coordinates are traced from public Lotte World guide-map layouts.
 // Coordinate convention: map north is -Z; the Adventure ice rink is the central landmark.
 // These are map-proportional placements, not surveyed GPS/CAD measurements.
+// Map-traced placement. Coordinates are normalized to the 2026 guide-map footprints
+// and the ice-rink/entrance landmarks; they are not survey-grade CAD coordinates.
 const tracedFloorLayouts={
  'B1F':{
-  '드림보트':[-48,-8],'4D 슈팅씨어터':[-58,-23],'와일드밸리':[-67,-38],'와일드정글':[-54,-52],'와일드윙':[-39,-55],
-  '오거스 팩토리':[-43,-5],'츄로빅':[-53,-17],'페어리테일 피자':[-62,-32],'101번지 남산돈까스':[-51,-45],'유브유부':[-35,-49],
-  '환타지 기프트샵':[-46,-28],'픽시매직':[-58,-42],'샤론캣 프리미엄 라운지':[-34,-38]
+  '드림보트':[16,-43],'4D 슈팅씨어터':[-35,-19],'와일드밸리':[-48,-44],'와일드정글':[-57,-30],'와일드윙':[-49,-54],
+  '도미노피자':[-20,-8],'츄로빅':[-41,-8],'롯데리아':[-52,-23],'101번지 남산돈까스':[-42,-37],'유브유부':[-26,-29],
+  '환타지기프트샵':[17,-16],'픽시매직':[-7,-17],'샤론캣프리미엄라운지':[-51,-6]
  },
  '1F':{
-  '신밧드의 모험':[-39,15],'스페인 해적선':[-49,31],'후룸라이드':[-57,45],'회전바구니':[-25,42],'로티트레인':[-8,48],
-  '배틀그라운드':[-56,-3],'플라이벤처':[-43,-19],'회전목마':[40,39],'황야의 무법자':[49,20],'키즈토리아':[56,-1],
-  '드래곤 와일드 슈팅':[43,-20],'어린이 범퍼카':[57,-32],'햇님달님':[40,-43],'점핑피쉬':[23,-47],
-  '언더씨킹덤':[7,-48],'유레카':[-10,-45],'스윙팡팡':[-25,-42],'매직붕붕카':[-42,-34],
-  '어린이동화극장':[5,-28],'카트라이더 레이싱 월드':[25,-26],
-  '스쿨푸드':[-34,4],'아라비안 바자 푸드':[-45,26],'롯데리아':[48,4],'카페·스낵 코너':[24,34],
-  '아라비안 바자':[-44,13],'포토스트리트':[34,47],'샤론캣 드레스':[49,34],'캐릭터 기프트샵':[57,18]
+  // Adventure 1F: ice rink is the central landmark; entrances and rides sit around its rim.
+  '신밧드의 모험':[-48,27],'스페인 해적선':[-54,13],'후룸라이드':[-50,-2],'회전바구니':[-35,38],
+  '로티트레인':[-13,49],'배틀그라운드':[-42,-21],'플라이벤처':[-23,-33],
+  '회전목마':[38,27],'황야의 무법자':[54,17],'키즈토리아':[58,-3],
+  '드래곤 와일드 슈팅':[50,-22],'어린이 범퍼카':[43,-40],'햇님달님':[26,-48],
+  '점핑피쉬':[8,-50],'언더씨킹덤':[-10,-48],'유레카':[-28,-45],
+  '스윙팡팡':[-47,-39],'매직붕붕카':[-57,-27],
+  '어린이동화극장':[10,-28],'카트라이더 레이싱 월드':[31,-25],
+  '스쿨푸드':[-40,18],'아라비안 바자 푸드':[-55,5],'롯데리아':[49,5],'카페·스낵 코너':[29,39],
+  '아라비안 바자':[-54,30],'포토스트리트':[40,43],'샤론캣 드레스':[54,35],'캐릭터 기프트샵':[59,23]
  },
  '2F':{
-  '후렌치레볼루션':[-22,5],'범퍼카':[25,8],
-  '퀴즈노스':[-40,20],'빈슈트루델':[-28,23],'앤티앤스 프레즐':[-12,24],'델리본':[8,23],'오이씨푸드':[28,22],
-  '위니비니':[-38,-3],'게임빌리지':[38,-4]
+  '후렌치레볼루션':[-14,0],'범퍼카':[34,12],
+  '퀴즈노스':[31,27],'빈슈트루델':[20,30],'앤티앤스 프레즐':[4,30],'델리본':[-12,30],'오이씨푸드':[-31,25],
+  '위니비니':[36,-5],'게임빌리지':[-39,-4]
  },
  '3F':{
-  '콩X고질라 더 라이드':[-27,5],'월드모노레일':[27,4],
-  '공차':[-42,21],'김피라':[-23,23],'상하이':[1,23],'델키스':[28,20],
-  '타로카드':[-38,-5],'게임빌리지':[37,-5]
+  '콩X고질라 더 라이드':[-30,3],'월드모노레일':[27,2],
+  '공차':[-38,25],'김피라':[-20,28],'상하이':[2,28],'델키스':[28,25],
+  '타로카드':[-36,-9],'게임빌리지':[37,-9]
  },
  '4F':{
-  '풍선비행':[-25,8],'파라오의 분노':[9,12],'어크로스 다크':[31,12],
-  '요거트월드':[-42,25],'라라코스트':[-25,25],'부창제과':[-8,25],'아이스팩토리':[13,25],'뉴욕핫도그':[33,25],
-  '헬로키티 숍':[-39,-5],'전망대 게임장':[5,-5],'파라오짱 게임즈':[36,-5]
+  '풍선비행':[-30,8],'파라오의 분노':[12,14],'어크로스 다크':[35,10],
+  '요거트월드':[-40,29],'라라코스트':[-22,30],'부창제과':[-4,30],'아이스팩토리':[17,29],'뉴욕핫도그':[37,27],
+  '헬로키티 숍':[-40,-9],'전망대 게임장':[4,-10],'파라오짱 게임즈':[39,-9]
  }
 };
 for(const floor of Object.keys(floorItems)){
-  for(const it of floorItems[floor]){
-    const p=tracedFloorLayouts[floor]?.[it.name];
-    if(p){it.x=p[0];it.z=p[1];}
-    else {it.x=-48+(floorItems[floor].indexOf(it)%5)*24;it.z=55+Math.floor(floorItems[floor].indexOf(it)/5)*8;}
-  }
+ for(const it of floorItems[floor]){
+  const p=tracedFloorLayouts[floor]?.[it.name];
+  if(p){it.x=p[0];it.z=p[1];}
+ }
 }
 const islandLayout={
- '아트란티스':[28,-130],'자이로스윙':[-43,-96],'쁘띠빵빵':[5,-78],'자이로드롭':[-48,-132],
- '환타지드림':[43,-92],'혜성특급':[35,-113],'자이로스핀':[48,-119],'스톤익스프레스':[14,-88],
+ // Positions follow the 2026 Magic Island guide-map order around the castle and shoreline.
+ '아트란티스':[23,-141],'자이로스윙':[-39,-98],'쁘띠빵빵':[4,-78],'자이로드롭':[-48,-132],
+ '환타지드림':[43,-92],'혜성특급':[34,-114],'자이로스핀':[48,-119],'스톤익스프레스':[14,-88],
  '아르카나라이드':[-17,-82],'에오스타워':[-5,-145],
  '레이크뷰 다이닝':[23,-75],'매직아일랜드 스낵':[-27,-74],'아일랜드 카페':[48,-104],
  '매직캐슬 트레져스':[0,-111]
 };
 const islandItems=facilityCatalog.filter(it=>it.floor==='매직아일랜드');
 islandItems.forEach(it=>{const p=islandLayout[it.name];if(p){it.x=p[0];it.z=p[1];}});
+
+// Published ride specifications are separated from estimated animation timings.
+const rideSpecs={
+ '아트란티스':{
+  lengthM:670,maxSpeedKmh:75,maxHeightM:22,durationSec:108,seats:8,maxInclineDeg:72,
+  elements:'LSM 급발진 → 72° 급경사 탑햇 → 2개 헬릭스 → 실내 쇼 구간 → 브레이크 → 역 구간',
+  source:'Coaster.cloud / Coasterpedia / 2003년 개장 당시 보도',
+  speedProfile:[[0,0],[1.5,15.6],[6,109.3],[12,207.3],[24,295],[40,390],[57,482],[72,540],[87,594],[100,644],[108,670]]
+ },
+ '후렌치레볼루션':{
+  lengthM:631,maxSpeedKmh:70,maxHeightM:28,durationSec:115,inversions:1,seats:28,
+  elements:'체인 리프트 힐 → 60° 하강 → 360° 버티컬 루프 1회 → 실내 커브·뱅킹 → 브레이크 구간',
+  source:'공개 제원 자료 및 2026년 운행 영상 설명',
+  speedProfile:[[0,0],[15,40],[22,176],[33,331],[50,420],[66,478],[82,540],[100,590],[115,631]]
+ },
+ '자이로스윙':{
+  rideHeightM:27,maxHeightM:32,maxAngleDeg:96,maxSpeedKmh:83,durationSec:100,seats:40,
+  elements:'40인 원형 좌석 링이 회전하면서 대형 진자 암이 앞뒤로 스윙',
+  source:'공개 시설 제원 자료'
+ },
+ '자이로드롭':{
+  maxHeightM:70,maxSpeedKmh:100,seats:40,rideType:'drop',simDurationSec:48,
+  elements:'승강 → 상단 정지 → 수직 자유낙하 → 제동',
+  source:'롯데월드 공식 가이드맵(높이·최고속도); 시뮬레이션 사이클 시간은 추정'
+ },
+ '스페인 해적선':{
+  maxAngleDeg:75,rideType:'ship',simDurationSec:90,
+  elements:'선체가 진자처럼 앞뒤로 왕복하며 최대 75°까지 상승',
+  source:'롯데월드 가이드맵'
+ }
+};
+for(const f of facilityCatalog) f.rideSpec=rideSpecs[f.name]||null;
 
 const facilities=[];
 const facilityMaterials={
