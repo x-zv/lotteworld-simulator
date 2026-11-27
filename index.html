@@ -1761,6 +1761,78 @@ document.querySelectorAll('#mobilePad button').forEach(btn=>{
   btn.addEventListener('pointerup',release);btn.addEventListener('pointercancel',release);btn.addEventListener('lostpointercapture',()=>{touchState[dir]=false});
 });
 actionButton.addEventListener('click',tryInteract);
+function ridePathWorldPoint(ride,progress){
+ const p=ride.path.getPointAt((progress+1)%1);
+ return ride.localPath?ride.facility.group.localToWorld(p.clone()):p.clone();
+}
+function ridePathCameraPose(ride,progress){
+ const epsilon=.0015;
+ const before=ridePathWorldPoint(ride,progress-epsilon);
+ const point=ridePathWorldPoint(ride,progress);
+ const after=ridePathWorldPoint(ride,progress+epsilon);
+ const tangent=after.clone().sub(before).normalize();
+ const tangentBefore=point.clone().sub(before).normalize();
+ const tangentAfter=after.clone().sub(point).normalize();
+ let curveNormal=tangentAfter.sub(tangentBefore);
+ curveNormal.addScaledVector(tangent,-curveNormal.dot(tangent));
+ if(curveNormal.lengthSq()>.0001)curveNormal.normalize();
+ // Keep horizontal turns upright; use the curve normal on vertical loops and inversions.
+ let up=new THREE.Vector3(0,1,0);
+ if(Math.abs(curveNormal.y)>.42)up.copy(curveNormal);
+ up.addScaledVector(tangent,-up.dot(tangent));
+ if(up.lengthSq()<.0001){
+  up.copy(curveNormal);
+  if(up.lengthSq()<.0001)up.set(0,0,1);
+ }
+ up.normalize();
+ const eye=point.clone().addScaledVector(up,1.05);
+ const look=eye.clone().addScaledVector(tangent,18).addScaledVector(up,.1);
+ return {eye,look,forward:tangent,up,point};
+}
+function localRideCameraPose(vehicle,seatLocal,forwardLocal,upLocal=new THREE.Vector3(0,1,0)){
+ vehicle.updateMatrixWorld(true);
+ const eye=vehicle.localToWorld(seatLocal.clone());
+ const lookPoint=vehicle.localToWorld(seatLocal.clone().add(forwardLocal.clone().normalize().multiplyScalar(18)));
+ const upPoint=vehicle.localToWorld(seatLocal.clone().add(upLocal.clone()));
+ const forward=lookPoint.clone().sub(eye).normalize();
+ const up=upPoint.sub(eye).normalize();
+ return {eye,look:lookPoint,forward,up};
+}
+function updateRideFirstPersonCamera(ride,elapsedSec,state){
+ let pose;
+ const f=ride.facility,vehicle=ride.vehicle;
+ if(ride.path){
+  pose=ridePathCameraPose(ride,state.progress);
+ }else if(f.motionType==='drop'){
+  const seatAngle=0.35;
+  pose=localRideCameraPose(vehicle,
+   new THREE.Vector3(Math.cos(seatAngle)*3.85,1.15,Math.sin(seatAngle)*3.85),
+   new THREE.Vector3(Math.cos(seatAngle),-.09,Math.sin(seatAngle)));
+ }else if(f.motionType==='swing'){
+  const spin=elapsedSec*.55;
+  const angle=spin;
+  const seat=new THREE.Vector3(Math.cos(angle)*7.4,-14.1,Math.sin(angle)*7.4);
+  const radial=new THREE.Vector3(Math.cos(angle),.03,Math.sin(angle));
+  pose=localRideCameraPose(vehicle,seat,radial,new THREE.Vector3(0,1,0));
+ }else if(f.motionType==='ship'){
+  pose=localRideCameraPose(vehicle,new THREE.Vector3(0,-5.15,.75),new THREE.Vector3(0,0,1),new THREE.Vector3(0,1,0));
+ }else if(f.motionType==='spin'||f.motionType==='carousel'){
+  const angle=elapsedSec*Math.PI*2/((ride.spec.durationSec||24)/3);
+  const seat=new THREE.Vector3(Math.cos(angle)*2.25,1.8,Math.sin(angle)*2.25);
+  const radial=new THREE.Vector3(Math.cos(angle),.04,Math.sin(angle));
+  pose=localRideCameraPose(vehicle,seat,radial,new THREE.Vector3(0,1,0));
+ }else{
+  pose=localRideCameraPose(vehicle,new THREE.Vector3(0,1.55,.15),new THREE.Vector3(0,0,1),new THREE.Vector3(0,1,0));
+ }
+ const max=ride.spec.maxSpeedKmh||0;
+ const speedRatio=max>0?THREE.MathUtils.clamp((state.speedKmh||0)/max,0,1):0;
+ const targetFov=55+13*speedRatio;
+ camera.fov=THREE.MathUtils.lerp(camera.fov,targetFov,.16);
+ camera.updateProjectionMatrix();
+ camera.up.copy(pose.up);
+ camera.position.lerp(pose.eye,.78);
+ camera.lookAt(pose.look);
+}
 function startRide(f){
   const origin=new THREE.Vector3(f.x,floorHeight[f.floor]??floorHeight['1F'],f.z);
   const spec=f.rideSpec||{};
@@ -1788,17 +1860,14 @@ function startRide(f){
     const base=new THREE.Mesh(new THREE.BoxGeometry(2.8,1,2),shell);base.position.y=.8;vehicle.add(base);
     for(let i=-1;i<=1;i++){const chair=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.55),seat);chair.position.set(i*.75,1.55,0);vehicle.add(chair)}
   }
-  // Put the visitor inside the correct seat area for the vehicle family.
-  const passenger=player.clone(true);passenger.scale.setScalar(.62);
-  if(path)passenger.position.set(0,.55,0);
-  else if(f.motionType==='swing')passenger.position.set(7.4,-14.15,0);
-  else if(f.motionType==='drop')passenger.position.set(4.2,.45,0);
-  else if(f.motionType==='ship')passenger.position.set(0,-5.35,0);
-  else if(/회전목마/.test(f.name))passenger.position.set(2,1.8,0);
-  else if(f.motionType==='spin')passenger.position.set(2.2,1.0,0);
-  else passenger.position.set(0,1.35,0);
-  vehicle.add(passenger);
+  // First-person boarding: hide the outside player model and do not add a body mesh
+  // to the cloned vehicle. The camera itself becomes the rider's eye position.
   player.visible=false;
+  controls.enabled=false;
+  controls.enableDamping=false;
+  camera.up.set(0,1,0);
+  camera.fov=58;
+  camera.updateProjectionMatrix();
   const durationSec=spec.durationSec??spec.simDurationSec??(path?24:18);
   currentRide={facility:f,vehicle,parent,path,localPath,origin,vehicleOffsetY,started:performance.now(),duration:durationSec*1000,spec};
   setRideHud(currentRide,{progress:0,distanceM:0,speedKmh:0,elapsedSec:0,durationSec,phase:'출발 준비'});
@@ -1811,8 +1880,13 @@ function endRide(){
   player.visible=true;
   player.position.set(ride.origin.x,ride.origin.y,ride.origin.z+5);
   currentRide=null;setRideHud(null,null);
+  controls.enabled=true;
+  controls.enableDamping=true;
+  camera.up.set(0,1,0);camera.fov=48;camera.updateProjectionMatrix();
   const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
-  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+  controls.target.copy(target);
+  camera.position.set(player.position.x,player.position.y+5.5,player.position.z+9);
+  controls.update();
   showToast('탑승이 종료되었습니다. 하차했습니다.');
 }
 function updateRide(now){
@@ -1868,8 +1942,7 @@ function updateRide(now){
     if(!state.durationSec)state.durationSec=r.duration/1000;
     setRideHud(r,state);
   }
-  target.y+=1.2;
-  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+  updateRideFirstPersonCamera(r,elapsedSec,state);
   if(elapsedSec>=r.duration/1000)endRide();
 }
 function startElevator(f,destination){
