@@ -1632,6 +1632,24 @@ function rideDescription(f){
   if(/보트|후룸|신밧드|드림/.test(f.name))return '보트에 탑승해 실내 코스를 이동하는 체험';
   return '이 시설의 가상 탑승 체험을 시작합니다.';
 }
+function ridePhaseLabel(name,progress){
+ if(name==='아트란티스'){
+  if(progress<.12)return 'LSM 급발진';
+  if(progress<.32)return '탑햇 급경사';
+  if(progress<.52)return '외부 헬릭스';
+  if(progress<.66)return '브레이크·실내 쇼 구간';
+  if(progress<.9)return '실내 헬릭스';
+  return '최종 브레이크';
+ }
+ if(name==='후렌치레볼루션'){
+  if(progress<.22)return '체인 리프트';
+  if(progress<.34)return '급하강';
+  if(progress<.49)return '360° 수직 루프';
+  if(progress<.84)return '실내 헬릭스·뱅킹';
+  return '브레이크 구간';
+ }
+ return progress>=.995?'도착':'주행 중';
+}
 function getRideState(spec,elapsedSec){
  const duration=spec?.durationSec??spec?.simDurationSec??18;
  const t=THREE.MathUtils.clamp(elapsedSec,0,duration);
@@ -1758,6 +1776,7 @@ function startRide(f){
     vehicle=f.motionPart.clone(true);
     const isWholeRideModel=f.motionPart===f.group;
     const sourceOffset=isWholeRideModel?new THREE.Vector3():f.motionPart.position.clone();
+    if(f.motionType==='drop')sourceOffset.y=0;
     vehicleOffsetY=sourceOffset.y;
     vehicle.position.set(f.x+sourceOffset.x,origin.y+sourceOffset.y,f.z+sourceOffset.z);
     vehicle.rotation.set(0,0,0);
@@ -1802,14 +1821,14 @@ function updateRide(now){
   const f=r.facility,spec=r.spec||{};
   let target,state;
   if(r.path){
-    state=getRideState(spec,elapsedSec);
+    state=getRideState({...spec,durationSec:spec.durationSec??r.duration/1000},elapsedSec);
     const point=r.path.getPointAt(state.progress),tangent=r.path.getTangentAt(state.progress);
     r.vehicle.position.copy(point);
     r.vehicle.rotation.y=Math.atan2(tangent.x,tangent.z);
     r.vehicle.rotation.z=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
     target=point.clone();
     if(r.localPath)target=f.group.localToWorld(target);
-    state.phase=elapsedSec<(spec.durationSec||0)?'주행 중':'도착';
+    state.phase=ridePhaseLabel(f.name,state.progress);
   }else if(f.motionType==='drop'){
     state=getDropState(elapsedSec,r.duration/1000);
     r.vehicle.position.set(f.x,r.origin.y+state.heightM,f.z);
@@ -1952,7 +1971,7 @@ function updateFacilityRideMotion(now){
       const duration=spec.durationSec||24,dispatchGap=6;
       const cycle=duration+dispatchGap;
       const elapsed=(t+(f.trackPhase||0)*cycle)%cycle;
-      const state=elapsed<duration?getRideState(spec,elapsed):{progress:0};
+      const state=elapsed<duration?getRideState({...spec,durationSec:duration},elapsed):{progress:0};
       const p=f.motionPath.getPointAt(state.progress||0),tan=f.motionPath.getTangentAt(state.progress||0);
       if(f.motionType==='localTrack')f.motionPart.position.set(p.x,p.y,p.z);
       else f.motionPart.position.set(p.x-f.x,p.y-floorHeight['매직아일랜드'],p.z-f.z);
