@@ -606,71 +606,205 @@ function signTexture(text,color){
   let t=text;if(t.length>16)t=t.slice(0,15)+'…';ctx.fillText(t,136,34,230);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;return texture;
 }
+const rideMotionItems=[];
+function addLocalWindow(parent,x,y,z,w=1.2,h=2.3,frame=mat(0xf2e6d2,.7),glass=mat(0x283f50,.35)){
+  box(parent,x,y,z,w,h,.16,glass);
+  box(parent,x-w/2-.12,y,z,.18,h+.3,.2,frame);box(parent,x+w/2+.12,y,z,.18,h+.3,.2,frame);
+  box(parent,x,y+h/2+.18,z,w+.35,.24,.2,frame);
+  const arch=[];for(let i=0;i<=12;i++){const a=Math.PI-i*Math.PI/12;arch.push([x+Math.cos(a)*w/2,y+h/2+Math.sin(a)*w/2,z]);}
+  curveTube(parent,arch,.12,frame,20);
+}
 function buildFacilityModel(f){
-  const g=new THREE.Group();g.position.set(f.x,f.kind==='elevator'?floorHeight['B1F']:(floorHeight[f.floor]??floorHeight['1F']),f.z);scene.add(g);f.group=g;
+  const g=new THREE.Group();
+  g.position.set(f.x,f.floor==='매직아일랜드'?floorHeight['매직아일랜드']:(f.kind==='elevator'?floorHeight['B1F']:(floorHeight[f.floor]??floorHeight['1F'])),f.z);
+  scene.add(g);f.group=g;
   const color=facilityMaterials[f.kind]||facilityMaterials.service;
+  const cream=mat(0xf0e5d3,.78),blue=mat(0x167fae,.45),gold=mat(0xd6ad60,.38),dark=mat(0x263746,.5);
   if(f.kind==='ride'){
-    cyl(g,0,.05,0,3.5,3.7,.45,mat(0x3c4b58));
-    box(g,0,.5,0,4.8,.55,4.8,color);
+    const rideBase=mat(0x565e63,.85),rideAccent=mat(0xd04b3e,.55),rideYellow=mat(0xe8bd48,.5);
+    cyl(g,0,0,0,3.45,3.65,.48,rideBase,40);
+    cyl(g,0,.48,0,3.1,3.1,.16,mat(0xaaa79d,.85),40);
     if(/회전목마/.test(f.name)){
-      cyl(g,1.0,1.05,0,2.3,2.3,.3,facilityMaterials.restaurant);
-      cyl(g,1.0,1.2,0,.35,.35,4,facilityMaterials.elevator);
-      const canopy=new THREE.Mesh(new THREE.ConeGeometry(2.8,1.5,12),mat(0xd8b65e));canopy.position.set(1,4.2,0);g.add(canopy);
-      for(let j=0;j<8;j++){const a=j*Math.PI/4;cyl(g,1+Math.cos(a)*1.7,1.5,Math.sin(a)*1.7,.12,.12,2.2,mat(0xf4e8c8));}
+      const deckMat=mat(0x8e4d61,.5),canopyMat=mat(0x167da9,.45);
+      cyl(g,0,.65,0,2.9,2.9,.55,deckMat,48);
+      cyl(g,0,1.0,0,.62,.72,4.3,cream,24);
+      cyl(g,0,2.2,0,.9,.9,.4,gold,32);
+      for(let j=0;j<12;j++){
+        const a=j*Math.PI*2/12,x=Math.cos(a)*2.05,z=Math.sin(a)*2.05;
+        cyl(g,x,1.15,z,.09,.09,3.8,gold,12);
+        const horse=new THREE.Group();horse.position.set(x,1.45,z);horse.rotation.y=-a;g.add(horse);
+        sphere(horse,0,.72,0,.66,.34,.27,mat(j%3===0?0xf5f0df:j%3===1?0xd9b56b:0x9ec0ce,.7));
+        sphere(horse,.3,1.12,.03,.22,.38,.2,cream);
+        sphere(horse,.48,1.42,.04,.3,.24,.22,cream);
+        sphere(horse,.58,1.46,.2,.055,.07,.05,dark);
+        beamBetween(horse,[0,0,0],[0,1.6,0],.055,gold);
+        box(horse,.15,.83,.24,.48,.16,.1,rideAccent);
+      }
+      const canopy=new THREE.Mesh(new THREE.ConeGeometry(3.25,1.5,16),canopyMat);canopy.position.y=5.1;canopy.castShadow=true;g.add(canopy);
+      const canopyBand=new THREE.Mesh(new THREE.TorusGeometry(2.88,.18,10,48),gold);canopyBand.rotation.x=Math.PI/2;canopyBand.position.y=4.5;g.add(canopyBand);
+      for(let j=0;j<8;j++){const a=j*Math.PI/4;sphere(g,Math.cos(a)*2.5,5.25,Math.sin(a)*2.5,.24,.24,.24,rideYellow);}
+      f.motionPart=g;f.motionType='carousel';rideMotionItems.push(f);
     }else if(/자이로드롭|에오스타워/.test(f.name)){
-      cyl(g,0,.9,0,.65,.9,8,color);cyl(g,8.8,0,0,2,2,.4,mat(0xd9b65e));
-    }else if(/후렌치|아트란티스|혜성특급|후룸|월드모노레일|카트라이더/.test(f.name)){
-      const pts=[[-5,1,-3],[-4,5,-2],[-2,2,0],[0,7,1],[2,2,3],[4,5,2],[5,1,0]].map(p=>new THREE.Vector3(p[0],p[1],p[2]));
-      const curve=new THREE.CatmullRomCurve3(pts);
-      const track=new THREE.Mesh(new THREE.TubeGeometry(curve,80,.22,8,false),mat(0xe4b45e));g.add(track);
-      for(let j=0;j<5;j++)cyl(g,-4+j*2,.6,0,.12,.12,3,mat(0x65717c));
-    }else if(/해적선|스윙|자이로|스톤익스프레스/.test(f.name)){
-      cyl(g,0,.9,0,.45,.45,5,color);
-      const arm=box(g,0,5.2,0,6,.35,.55,mat(0xe3b85f));
-      const boat=box(g,0,3,2.4,3,.65,1.4,mat(0x9d4e48));f.motionPart=boat;
-    }else if(/보트|드림|와일드밸리|신밧드|스톤/.test(f.name)){
-      box(g,-1,.9,0,2,.65,4,mat(0x3b8ca7));box(g,-1,1.55,0,2,.25,4,mat(0xe5c875));
-      const waterMat=new THREE.MeshStandardMaterial({color:0x4b9ab3,roughness:.2,transparent:true,opacity:.8});
-      box(g,0,.2,0,6,.15,5,waterMat);
-    }else if(/비행|풍선|플라이/.test(f.name)){
-      sphere(g,0,4,0,1.7,2.1,1.7,mat(0xd9a75d));box(g,0,1.5,0,2,.8,2,mat(0x577b8c));
+      const mastMat=mat(0x326c90,.4),stripe=mat(0xe9e5d7,.6);
+      for(const x of [-1.35,1.35])for(const z of [-1.35,1.35])beamBetween(g,[x,.8,z],[x*.78,13,z*.78],.25,mastMat);
+      cyl(g,0,1,0,.7,.95,11.8,mastMat,24);
+      for(let y=2;y<12;y+=2.5){cyl(g,0,y,0,.78,.78,.25,stripe,24);}
+      for(let y=2;y<12;y+=2.7){
+        beamBetween(g,[-1.3,y,-1.3],[1.3,y+2.2,1.3],.1,gold);
+        beamBetween(g,[1.3,y,-1.3],[-1.3,y+2.2,1.3],.1,gold);
+      }
+      const ring=new THREE.Group();ring.position.y=8.7;g.add(ring);
+      const tor=new THREE.Mesh(new THREE.TorusGeometry(2.45,.3,10,40),rideYellow);tor.rotation.x=Math.PI/2;ring.add(tor);
+      for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*2.45,z=Math.sin(a)*2.45;const seat=box(ring,x,-.1,z,.62,.75,.5,rideAccent);seat.rotation.y=-a;}
+      f.motionPart=ring;f.motionType='drop';rideMotionItems.push(f);
+    }else if(/자이로스윙|자이로/.test(f.name)){
+      const support=mat(0xf1eee6,.58);
+      beamBetween(g,[-3.3,.8,0],[0,11.8,0],.48,support);beamBetween(g,[3.3,.8,0],[0,11.8,0],.48,support);
+      beamBetween(g,[-3.3,.8,0],[-.7,6,0],.28,support);beamBetween(g,[3.3,.8,0],[.7,6,0],.28,support);
+      const arm=new THREE.Group();arm.position.set(0,10.7,0);g.add(arm);
+      beamBetween(arm,[0,0,0],[0,-5.5,0],.28,rideAccent);
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(3.1,.38,10,40),rideYellow);ring.rotation.x=Math.PI/2;ring.position.y=-6;arm.add(ring);
+      for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*3.1,z=Math.sin(a)*3.1;const seat=box(arm,x,-6,z,.64,.55,.55,rideAccent);seat.rotation.y=-a;}
+      f.motionPart=arm;f.motionType='swing';rideMotionItems.push(f);
+    }else if(/후렌치레볼루션|프렌치|혁명/.test(f.name)){
+      const trackMat=mat(0x167eb8,.35),supportMat=mat(0xe3e6e3,.55);
+      const loop=new THREE.Mesh(new THREE.TorusGeometry(3.8,.25,12,72),trackMat);loop.position.set(0,5.1,0);g.add(loop);
+      const loop2=new THREE.Mesh(new THREE.TorusGeometry(3.05,.19,10,64),mat(0x63b1d0,.4));loop2.position.set(.4,5.1,.18);g.add(loop2);
+      beamBetween(g,[-3.2,.7,0],[-3.2,8.7,0],.24,supportMat);beamBetween(g,[3.2,.7,0],[3.2,8.7,0],.24,supportMat);
+      curveTube(g,[[-5,.8,0],[-4,2,-1],[-2,4,0],[0,7,1],[2,3,0],[4,2,-1],[5,.8,0]],.22,trackMat,100);
+      for(let j=0;j<5;j++)beamBetween(g,[-4+j*2,.7,-1.4],[-4+j*2,3.3+(j%2)*1.5,-1.4],.13,supportMat);
+      const train=box(g,0,5.7,0,1.9,.6,1.0,rideYellow);f.motionPart=train;f.motionType='coaster';rideMotionItems.push(f);
+    }else if(/아트란티스/.test(f.name)){
+      const rock=mat(0x6c6a61,.95),rockLight=mat(0x9c9180,.95);
+      for(let j=0;j<7;j++){const a=j*Math.PI*2/7;sphere(g,Math.cos(a)*1.8,1.3+(j%3)*.55,Math.sin(a)*1.5,1.5+(j%2)*.5,1.7,1.25,j%2?rock:rockLight);}
+      const atlantisTrack=mat(0x126d9f,.4);
+      curveTube(g,[[-3,.8,0],[-2,4,-1],[0,6,0],[2,3,1],[3,1.1,0]],.28,atlantisTrack,100);
+      for(let j=0;j<4;j++)beamBetween(g,[-2.8+j*1.8,.7,-.4],[-2.8+j*1.8,3+(j%2)*2,-.4],.15,cream);
+      const boat=box(g,0,2,0,1.8,.55,1.0,mat(0xe4a843,.5));f.motionPart=boat;f.motionType='coaster';rideMotionItems.push(f);
+    }else if(/해적선|콘키스타도르/.test(f.name)){
+      const shipFrame=mat(0xe6e5dc,.6),wood=mat(0x75432f,.72);
+      beamBetween(g,[-3,.8,0],[0,10,0],.42,shipFrame);beamBetween(g,[3,.8,0],[0,10,0],.42,shipFrame);
+      beamBetween(g,[-3,.8,0],[3,.8,0],.45,shipFrame);
+      const armGroup=new THREE.Group();armGroup.position.set(0,9.5,0);g.add(armGroup);
+      beamBetween(armGroup,[0,0,0],[0,-5.2,0],.32,gold);
+      const ship=new THREE.Group();ship.position.set(0,-5.7,0);armGroup.add(ship);
+      sphere(ship,0,0,0,2.7,.55,1.0,wood);
+      box(ship,0,.45,0,3.8,.22,1.25,wood);
+      for(let j=0;j<5;j++)box(ship,-1.5+j*.75,1.1,0,.12,1.0,.12,cream);
+      beamBetween(ship,[0,1.1,0],[0,2.4,0],.08,cream);
+      f.motionPart=armGroup;f.motionType='swing';rideMotionItems.push(f);
+    }else if(/후룸라이드|드림보트|신밧드|와일드밸리|와일드정글|와일드윙|스톤익스프레스/.test(f.name)){
+      const waterMat=new THREE.MeshStandardMaterial({color:0x168db5,roughness:.16,metalness:.1,transparent:true,opacity:.86});
+      const rocks=mat(0x766c5c,.98),wood=mat(0x7c4a30,.7);
+      box(g,0,.3,0,7,.18,5,waterMat);
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;sphere(g,Math.cos(a)*3.1,.9,Math.sin(a)*2.2,1.3,1.4,1.1,rocks);}
+      const flumePts=[[-3,1.0,1.5],[-2,3.8,.8],[0,5.5,0],[2,3.2,-.8],[3,.9,-1.4]];
+      curveTube(g,flumePts,.42,waterMat,80);
+      const boat=new THREE.Group();boat.position.set(0,1.8,0);g.add(boat);
+      sphere(boat,0,0,0,1.55,.35,.65,wood);box(boat,0,.3,0,2.2,.13,1.1,mat(0xe6bc6d));
+      f.motionPart=boat;f.motionType='water';rideMotionItems.push(f);
+    }else if(/풍선비행|비행|풍선/.test(f.name)){
+      const basketColors=[0xe0a247,0x4d9c78,0xe3d16d,0x5a91b3,0xc66b4d];
+      cyl(g,0,.7,0,2.5,2.5,.35,mat(0x6f8190,.6));
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5,x=Math.cos(a)*2,z=Math.sin(a)*2;
+        const balloonMat=mat(basketColors[j],.5);sphere(g,x,5.8,z,1.2,1.5,1.2,balloonMat);
+        for(let k=0;k<6;k++){const ang=k*Math.PI/3;beamBetween(g,[x+Math.cos(ang)*.8,4.9,z+Math.sin(ang)*.8],[x+Math.cos(ang)*.3,2.5,z+Math.sin(ang)*.3],.045,gold);}
+        box(g,x,2.2,z,1.25,.65,1.1,woodMaterial());
+        for(let k=-1;k<=1;k++)beamBetween(g,[x+k*.35,2.55,z],[x+k*.35,4.9,z],.045,gold);
+      }
+      f.motionPart=g;f.motionType='balloon';rideMotionItems.push(f);
+    }else if(/파라오/.test(f.name)){
+      const egyptStone=mat(0xc9bda5,.95),egyptBlue=mat(0x1b4e70,.55),egyptGold=mat(0xc9a34c,.45);
+      box(g,0,1,0,6,7,2.5,egyptStone);
+      box(g,0,8,0,7,1.2,3,egyptBlue);
+      for(const x of [-2.2,2.2]){
+        cyl(g,x,1,1.2,.42,.55,6,egyptGold,12);
+        cyl(g,x,6.9,1.2,.78,.78,.45,egyptGold,12);
+        box(g,x,8.8,1.2,.3,1.4,.3,egyptBlue);
+        sphere(g,x,10,1.2,.45,.7,.45,egyptStone);
+      }
+      const sign=new THREE.Mesh(new THREE.PlaneGeometry(6.8,1.4),new THREE.MeshBasicMaterial({map:makeCanvasSign('파라오의 분노','PHARAOH’S FURY','#173b58','#e4bd68')}));
+      sign.position.set(0,7.4,1.45);g.add(sign);
+      for(const x of [-3.2,3.2])box(g,x,1.1,1.35,.65,2.1,.8,egyptStone);
     }else{
-      cyl(g,0,1,0,1.4,1.8,2.2,mat(0x5d8193));
-      for(let j=0;j<4;j++){const a=j*Math.PI/2;box(g,Math.cos(a)*2,1.2,Math.sin(a)*2,.7,1.5,.7,mat(0xe0b76c));}
+      const ridePaints=[0x2489b6,0xe6a84e,0xd75b67,0x63a98c,0x8567a8];
+      const paint=mat(ridePaints[Number(f.id.slice(1))%ridePaints.length],.5);
+      cyl(g,0,.8,0,.55,.75,5.5,mat(0x546c7a,.45));
+      cyl(g,0,6.3,0,1.25,1.25,.35,gold,32);
+      const hub=new THREE.Group();hub.position.y=6.4;g.add(hub);
+      for(let j=0;j<6;j++){const a=j*Math.PI/3,x=Math.cos(a)*2.6,z=Math.sin(a)*2.6;
+        beamBetween(hub,[0,0,0],[x,0,z],.12,gold);
+        const car=new THREE.Group();car.position.set(x,-.2,z);hub.add(car);
+        sphere(car,0,0,0,.9,.38,.7,paint);box(car,0,.35,0,.85,.15,.55,cream);
+      }
+      f.motionPart=hub;f.motionType='spin';rideMotionItems.push(f);
     }
     const cart=box(g,0,1.2,0,1.7,.65,1.5,mat(0x9f4541));cart.visible=false;f.cart=cart;
   }else if(f.kind==='restaurant'){
-    box(g,0,.2,0,6,3.3,4,color);box(g,0,3.7,0,6.5,.35,4.5,mat(0xe8c27d));
-    box(g,0,2.5,2.1,2.6,1.5,.15,mat(0x1b2834));
-    for(let j=0;j<2;j++){const z=-3+j*1.5;const table=cyl(g,-5,.2,z,.65,.65,.3,mat(0xd6ad63));cyl(g,-5,.5,z,.16,.16,1.0,mat(0x465b68));}
-    box(g,0,5.3,-1.7,5,.3,.18,mat(0xf4ddaa));
+    const wallColors=[0xf1e2cc,0xe8d2ba,0xe6dfca,0xd7e3dc,0xe9d7d3];
+    const facade=mat(wallColors[Number(f.id.slice(1))%wallColors.length],.82);
+    const frame=mat(0x704d3b,.62),windowMat=mat(0x263d50,.35),awning=mat(0xc44e42,.48);
+    box(g,0,.25,0,6.8,3.4,4.6,facade);
+    box(g,0,3.7,0,7.1,.35,4.9,frame);
+    box(g,0,1.9,2.34,3.1,2.3,.12,windowMat);
+    box(g,-2.05,1.9,2.46,.13,2.5,.18,frame);box(g,2.05,1.9,2.46,.13,2.5,.18,frame);
+    box(g,0,3.25,2.55,3.8,.55,.75,awning);
+    for(let j=-3;j<=3;j++){box(g,j*.48,3.25,2.95,.22,.55,.08,cream);}
+    box(g,0,.95,2.55,1.25,1.8,.2,frame);
+    for(let j=0;j<3;j++){
+      const x=-2.4+j*2.4,z=-3.2;
+      cyl(g,x,.6,z,.72,.72,.24,gold,24);
+      cyl(g,x,.75,z,.13,.13,1.15,frame,12);
+      for(const dx of [-.55,.55])cyl(g,x+dx,.25,z,.12,.12,.7,frame,10);
+    }
+    for(const x of [-2.5,2.5])box(g,x,4.1,-1.6,.22,.5,.22,gold);
+    const shopName=new THREE.Mesh(new THREE.PlaneGeometry(6.4,1.0),new THREE.MeshBasicMaterial({map:makeCanvasSign(f.name,'DINING','#784d37','#fff0d7')}));
+    shopName.position.set(0,4.65,2.48);g.add(shopName);
   }else if(f.kind==='shop'){
-    box(g,0,.2,0,5.6,3,4,color);box(g,0,3.4,0,6,.3,4.3,mat(0xd9b76a));
-    for(let j=0;j<3;j++)box(g,-1.8+j*1.8,1.1,2.05,1.2,1.7,.12,mat(0x9ec2cf));
+    const shopWall=mat(0xdcd6e7,.75),shopFrame=mat(0x4b5367,.58),glassMat=mat(0x9cc8d2,.22);
+    box(g,0,.25,0,6.2,3.4,4.4,shopWall);
+    box(g,0,3.65,0,6.6,.35,4.8,mat(0x4b6682,.55));
+    box(g,0,1.9,2.24,4.6,2.8,.14,glassMat);
+    for(let x of [-2.5,-.85,.85,2.5])box(g,x,1.9,2.35,.13,3,.18,shopFrame);
+    for(let j=0;j<3;j++){const x=-1.65+j*1.65;box(g,x,1.1,1.55,.9,1.4,.7,mat([0xd9a24c,0x72a8ad,0xc87d96][j],.55));}
+    box(g,0,3.5,2.45,6,.42,.35,mat(0x263b5b,.45));
+    const shopSign=new THREE.Mesh(new THREE.PlaneGeometry(5.6,1.1),new THREE.MeshBasicMaterial({map:makeCanvasSign(f.name,'SHOP','#263b5b','#f1d49a')}));
+    shopSign.position.set(0,4.25,2.5);g.add(shopSign);
+    for(const x of [-2.9,2.9])box(g,x,1.8,2.4,.16,3.5,.2,shopFrame);
   }else if(f.kind==='elevator'){
-    box(g,0,0,0,4,36,4,new THREE.MeshPhysicalMaterial({color:0xa5c4d2,transparent:true,opacity:.24,roughness:.2}));
-    for(const x of [-2,2])box(g,x,0,0,.18,36,.18,mat(0xd8bb79));
+    box(g,0,0,0,4.4,36,4.4,new THREE.MeshPhysicalMaterial({color:0x9ebdc9,transparent:true,opacity:.16,roughness:.2,metalness:.08}));
+    for(const x of [-2.1,2.1])box(g,x,0,0,.2,36,.2,mat(0xd8bb79,.35));
     for(const floor of floorOrder){
       const localY=floorHeight[floor]-floorHeight['B1F'];
-      box(g,0,localY,2.05,2.2,3.8,.12,mat(0x6e9bac));
-      box(g,0,localY+3.8,2.05,2.2,.18,.12,mat(0xd8bb79));
+      box(g,0,localY,2.16,2.2,3.8,.14,mat(0x6e9bac));
+      box(g,0,localY+3.8,2.2,2.2,.18,.14,mat(0xd8bb79));
     }
     const cabin=new THREE.Group();g.add(cabin);
     box(cabin,0,0,0,2,2.9,2,mat(0x92b9c7));
     box(cabin,0,1.1,1.02,1.6,.3,.08,mat(0xe7bd6b));
     cabin.position.set(0,8,0);f.cabin=cabin;
-    box(g,2.7,8.7,2.1,.35,1.1,.25,mat(0xe7bd6b));
   }else if(f.kind==='escalator'||f.kind==='stairs'){
-    const base=box(g,0,0,0,5,.7,10,mat(0x445767));base.rotation.x=-.35;
-    for(let j=0;j<9;j++){const step=box(g,0,.15+j*.27,-4.2+j*.95,4,.16,.85,mat(0x9cabb5));}
-    box(g,-2,1,0,.14,3,10,mat(0xe0bb70));box(g,2,1,0,.14,3,10,mat(0xe0bb70));
+    const stairMaterial=mat(0x586977,.65),railMaterial=mat(0xd6b56e,.45);
+    const base=box(g,0,0,0,5,.55,10,stairMaterial);base.rotation.x=-.35;
+    for(let j=0;j<12;j++){
+      const step=box(g,0,.18+j*.22,-4.2+j*.72,4,.16,.72,mat(0xb0b8b6,.72));
+      if(f.kind==='escalator')box(g,0,.12+j*.22,-4.2+j*.72,3.8,.04,.55,mat(0x354553,.5));
+    }
+    beamBetween(g,[-2.2,.9,-4.5],[-2.2,3.3,4.5],.12,railMaterial);
+    beamBetween(g,[2.2,.9,-4.5],[2.2,3.3,4.5],.12,railMaterial);
   }else{
-    box(g,0,.2,0,4,2.6,3.5,color);
-    box(g,0,3,0,4.4,.3,3.8,mat(0xe4c176));
-    box(g,0,1.7,1.85,2.5,1.2,.12,mat(0x1d2c3a));
+    const serviceWall=mat(0xe5e1d6,.8),serviceFrame=mat(0x657c85,.65);
+    box(g,0,.25,0,4.8,2.8,3.8,serviceWall);
+    box(g,0,3.1,0,5.1,.3,4.1,serviceFrame);
+    box(g,0,1.55,1.96,2.7,1.8,.14,mat(0x2c4150,.4));
+    box(g,-1.45,1.55,2.08,.12,2,.16,serviceFrame);box(g,1.45,1.55,2.08,.12,2,.16,serviceFrame);
+    box(g,0,.75,2.12,1.2,.25,.2,mat(0xc0a46d,.55));
   }
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(8.5,1.9),new THREE.MeshBasicMaterial({map:signTexture(f.name, f.kind==='ride'?'#78c3e9':f.kind==='restaurant'?'#f1b977':f.kind==='shop'?'#c9a1ed':'#86d5c0'),side:THREE.DoubleSide,transparent:true}));
-  sign.position.set(0,7.3,2.8);g.add(sign);
+  const signColor=f.kind==='ride'?'#167eaa':f.kind==='restaurant'?'#784d37':f.kind==='shop'?'#263b5b':'#456e69';
+  const signY=f.kind==='elevator'?16:f.kind==='ride'?9.3:6.1;
+  const signZ=f.kind==='elevator'?2.4:2.65;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(7.6,1.35),new THREE.MeshBasicMaterial({map:signTexture(f.name,signColor),side:THREE.DoubleSide,transparent:true}));
+  sign.position.set(0,signY,signZ);g.add(sign);
   return g;
 }
 facilityCatalog.forEach(f=>{buildFacilityModel(f);facilities.push(f)});
