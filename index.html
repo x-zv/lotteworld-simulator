@@ -134,13 +134,13 @@ function curveTube(parent,points,radius,material,segments=64){
   mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
 }
 function makeCanvasSign(main,sub,background='#253b55',foreground='#fff2d1'){
-  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=256;
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
   const ctx=canvas.getContext('2d');
-  ctx.fillStyle=background;ctx.fillRect(0,0,1024,256);
-  ctx.strokeStyle='#d8b56a';ctx.lineWidth=12;ctx.strokeRect(10,10,1004,236);
+  ctx.fillStyle=background;ctx.fillRect(0,0,512,128);
+  ctx.strokeStyle='#d8b56a';ctx.lineWidth=6;ctx.strokeRect(5,5,502,118);
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=foreground;
-  ctx.font='bold 76px sans-serif';ctx.fillText(main,512,104,940);
-  if(sub){ctx.font='bold 34px sans-serif';ctx.fillText(sub,512,190,940);}
+  ctx.font='bold 39px sans-serif';ctx.fillText(main,256,51,470);
+  if(sub){ctx.font='bold 18px sans-serif';ctx.fillText(sub,256,96,470);}
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
   return texture;
 }
@@ -657,7 +657,7 @@ function buildFacilityModel(f){
       const tor=new THREE.Mesh(new THREE.TorusGeometry(2.45,.3,10,40),rideYellow);tor.rotation.x=Math.PI/2;ring.add(tor);
       for(let j=0;j<16;j++){const a=j*Math.PI*2/16,x=Math.cos(a)*2.45,z=Math.sin(a)*2.45;const seat=box(ring,x,-.1,z,.62,.75,.5,rideAccent);seat.rotation.y=-a;}
       f.motionPart=ring;f.motionType='drop';rideMotionItems.push(f);
-    }else if(/자이로스윙|자이로/.test(f.name)){
+    }else if(/자이로스윙/.test(f.name)){
       const support=mat(0xf1eee6,.58);
       beamBetween(g,[-3.3,.8,0],[0,11.8,0],.48,support);beamBetween(g,[3.3,.8,0],[0,11.8,0],.48,support);
       beamBetween(g,[-3.3,.8,0],[-.7,6,0],.28,support);beamBetween(g,[3.3,.8,0],[.7,6,0],.28,support);
@@ -713,6 +713,77 @@ function buildFacilityModel(f){
         for(let k=-1;k<=1;k++)beamBetween(g,[x+k*.35,2.55,z],[x+k*.35,4.9,z],.045,gold);
       }
       f.motionPart=g;f.motionType='balloon';rideMotionItems.push(f);
+    }else if(/자이로스핀/.test(f.name)){
+      const spinArm=new THREE.Group();spinArm.position.y=5.5;g.add(spinArm);
+      cyl(g,0,.7,0,.85,.95,5.2,mat(0x39718c,.42));
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.9,.9,.6,32),rideYellow);hub.position.y=5.5;g.add(hub);
+      for(let j=0;j<8;j++){
+        const a=j*Math.PI/4,x=Math.cos(a)*2.6,z=Math.sin(a)*2.6;
+        beamBetween(spinArm,[0,0,0],[x,.6,z],.18,blue);
+        const gondola=new THREE.Group();gondola.position.set(x,.5,z);spinArm.add(gondola);
+        const pod=box(gondola,0,0,0,1.35,.9,1.4,mat(j%2?0x3c8eb2:0xc94d42,.5));pod.rotation.y=-a;
+        sphere(gondola,0,.58,0,.42,.35,.42,rideYellow);
+      }
+      f.motionPart=spinArm;f.motionType='spin';rideMotionItems.push(f);
+    }else if(/회전바구니/.test(f.name)){
+      const deck=cyl(g,0,.65,0,3.05,3.05,.45,mat(0x2c819e,.5),48);
+      cyl(g,0,1,0,.45,.55,3.5,gold,24);
+      const canopy=new THREE.Mesh(new THREE.ConeGeometry(3.1,1.6,16),mat(0xe9c25c,.5));canopy.position.y=4.5;g.add(canopy);
+      const cupColors=[0xe35b50,0x4b94c2,0x6aa879,0xd9a84e,0x8c70a7,0xe19b5b];
+      for(let j=0;j<6;j++){
+        const a=j*Math.PI/3,x=Math.cos(a)*2.05,z=Math.sin(a)*2.05;
+        const cup=new THREE.Group();cup.position.set(x,1.15,z);g.add(cup);
+        const shell=new THREE.Mesh(new THREE.CylinderGeometry(.62,.88,.9,24),mat(cupColors[j],.45));shell.position.y=.48;cup.add(shell);
+        cyl(cup,0,.95,0,.13,.13,.5,gold,12);
+      }
+      f.motionPart=g;f.motionType='spin';rideMotionItems.push(f);
+    }else if(/범퍼카|카트라이더/.test(f.name)){
+      box(g,0,.75,0,6.2,.25,5.5,mat(0x3a4854,.7));
+      for(const x of [-3,3])box(g,x,1,0,.35,.9,6,mat(0x9aabb2,.55));
+      for(const z of [-2.7,2.7])box(g,0,1,z,6.2,.9,.3,mat(0x9aabb2,.55));
+      const colors=[0xd74a43,0x2f83b9,0xe5b343,0x6e9c65];
+      for(let j=0;j<4;j++){
+        const x=(j%2?1:-1)*1.45,z=(j<2?-1:1)*1.2;
+        const car=new THREE.Group();car.position.set(x,1.1,z);g.add(car);
+        const body=box(car,0,0,0,1.5,.48,1.1,mat(colors[j],.42));
+        sphere(car,0,.42,-.08,.38,.32,.38,mat(0x4d6578,.3));
+        for(const dx of [-.56,.56])for(const dz of [-.38,.38])cyl(car,dx,-.12,dz,.2,.2,.22,dark,12);
+      }
+    }else if(/점핑피쉬|유레카|햇님달님|스윙팡팡|매직붕붕카|쁘띠빵빵/.test(f.name)){
+      cyl(g,0,.75,0,.75,.95,4.2,blue,24);
+      const hub=new THREE.Group();hub.position.y=4.7;g.add(hub);
+      const podColors=[0xe7b748,0x3f92bb,0xd65555,0x64a37a,0x9979bb,0xe58b49];
+      for(let j=0;j<8;j++){
+        const a=j*Math.PI/4,x=Math.cos(a)*2.55,z=Math.sin(a)*2.55;
+        beamBetween(hub,[0,0,0],[x,-.6,z],.15,gold);
+        const pod=new THREE.Group();pod.position.set(x,-.9,z);hub.add(pod);
+        if(/점핑피쉬/.test(f.name)){
+          sphere(pod,0,0,0,.9,.46,.55,mat(podColors[j%6],.5));
+          sphere(pod,.72,.12,0,.25,.25,.25,cream);
+          sphere(pod,.82,.16,.21,.07,.08,.05,dark);
+          beamBetween(pod,[0,.35,0],[0,1.4,0],.055,gold);
+        }else{
+          sphere(pod,0,.1,0,.82,.42,.62,mat(podColors[j%6],.48));
+          box(pod,0,.52,0,.8,.14,.7,cream);
+        }
+      }
+      f.motionPart=hub;f.motionType='spin';rideMotionItems.push(f);
+    }else if(/키즈토리아|언더씨킹덤|어린이동화극장/.test(f.name)){
+      const playWall=mat(0xf1dfba,.8),playPink=mat(0xe27d80,.55),playBlue=mat(0x4a9ec1,.5);
+      box(g,0,2,0,6.2,3.8,4.5,playWall);
+      box(g,-2.3,4.2,-.3,1.6,2.2,1.6,playPink);
+      box(g,2.3,4.2,-.3,1.6,2.2,1.6,playBlue);
+      for(const x of [-2.2,0,2.2])addLocalWindow(g,x,2.1,2.32,1.1,2,cream,dark);
+      const roof1=new THREE.Mesh(new THREE.ConeGeometry(2.3,2,4),playBlue);roof1.position.set(-2.3,6.9,0);roof1.rotation.y=Math.PI/4;g.add(roof1);
+      const roof2=new THREE.Mesh(new THREE.ConeGeometry(2.3,2,4),playPink);roof2.position.set(2.3,6.9,0);roof2.rotation.y=Math.PI/4;g.add(roof2);
+      box(g,0,.8,2.8,2.4,.35,1.4,mat(0xe8bd59,.5));
+    }else if(/플라이벤처|배틀그라운드|4D 슈팅/.test(f.name)){
+      box(g,0,2,0,6.2,3.8,5,mat(0x526b7b,.6));
+      box(g,0,4.05,0,6.5,.5,5.3,mat(0x26394d,.5));
+      box(g,0,2.4,2.58,4.2,2.3,.16,mat(0x1c2d3b,.3));
+      for(const x of [-2,2])box(g,x,2.4,2.72,.14,2.7,.18,gold);
+      const marquee=new THREE.Mesh(new THREE.PlaneGeometry(5.8,1.2),new THREE.MeshBasicMaterial({map:makeCanvasSign(f.name,'THE RIDE','#233c54','#f0c76a')}));
+      marquee.position.set(0,5,2.7);g.add(marquee);
     }else if(/파라오/.test(f.name)){
       const egyptStone=mat(0xc9bda5,.95),egyptBlue=mat(0x1b4e70,.55),egyptGold=mat(0xc9a34c,.45);
       box(g,0,1,0,6,7,2.5,egyptStone);
