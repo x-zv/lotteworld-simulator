@@ -1818,10 +1818,9 @@ function updateRideFirstPersonCamera(ride,elapsedSec,state){
  }else if(f.motionType==='ship'){
   pose=localRideCameraPose(vehicle,new THREE.Vector3(0,-5.15,.75),new THREE.Vector3(0,0,1),new THREE.Vector3(0,1,0));
  }else if(f.motionType==='spin'||f.motionType==='carousel'){
-  const angle=elapsedSec*Math.PI*2/((ride.spec.durationSec||24)/3);
-  const seat=new THREE.Vector3(Math.cos(angle)*2.25,1.8,Math.sin(angle)*2.25);
-  const radial=new THREE.Vector3(Math.cos(angle),.04,Math.sin(angle));
-  pose=localRideCameraPose(vehicle,seat,radial,new THREE.Vector3(0,1,0));
+  // The cloned ride root already carries the rotational motion; keep the seat offset fixed
+  // in local space so the first-person camera does not rotate twice.
+  pose=localRideCameraPose(vehicle,new THREE.Vector3(2.25,1.8,0),new THREE.Vector3(1,.04,0),new THREE.Vector3(0,1,0));
  }else{
   pose=localRideCameraPose(vehicle,new THREE.Vector3(0,1.55,.15),new THREE.Vector3(0,0,1),new THREE.Vector3(0,1,0));
  }
