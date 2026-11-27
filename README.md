@@ -10,7 +10,7 @@ A browser-based, walkable 3D reconstruction prototype of Lotte World Adventure a
 - Photo-inspired themed village facades: grand European-style palace frontage, half-timber houses, colored roofs, arched shop windows, rockwork backdrop, palm trees, and balloon-shaped lanterns
 - Magic Island landform, Seokchon Lake, stone approach bridge, and pastel Magic Castle with blue conical turrets, arched windows, trim, and finials
 - Separate procedural attraction models and animated motion for carousel, pirate ship, gyro rides, coaster loops, water rides, balloon flight, teacups, bumper cars, children’s rides, and themed dark rides
-- Explicit track geometry and path-following vehicles for Atlantis, French Revolution, World Monorail, and water-ride routes
+- Separate route models and path-following vehicles for Atlantis, French Revolution, Comet Express, World Monorail, Kart Rider, Lotty Train, Fantasy Dream, Sinbad, Dream Boat, Wild Valley, Flume Ride, Wild Jungle, Wild Wing, Stone Express, Pharaoh's Fury, Kong x Godzilla, and Across Dark; each route remains a photo/guide-map-informed approximation unless a measured track plan is available
 - 63 anonymous animated guest figures across the rink, promenades, and galleries, including walkers, idle spectators, phone-photo gestures, and skaters; the player avatar is also a rigged multi-part human figure
 - Restaurant and shop storefronts with separate wall palettes, glazing, awnings, tables, and sign panels
 - Orbit camera controls, zoom, pan, reset view, and landmark labels
@@ -57,18 +57,36 @@ The scene is a photo-matched approximation rather than a surveyed or CAD-accurat
 The current attraction catalog follows the 2026 Korean guide-map names and floor groupings. The relative positions are manually traced from publicly available isometric guide-map artwork and anchored around the entrance, bridge, island shoreline, and 30 × 60 m ice rink. These are local simulation coordinates, not surveyed metre coordinates, GPS positions, or CAD measurements. A measured architectural floor plan is still required to claim exact clearances and facility coordinates.
 
 Ride values currently shown in the simulator:
-- **Atlantis:** 670 m track, 75 km/h maximum, 22 m height, 72° steep section, 8-seat boat, and approximately 108 seconds from the cited coaster database references. Its 3D route is a photo/map-informed approximation; the vehicle follows that route using a 670 m display-distance profile.
+- **Atlantis:** 670 m track, 75 km/h maximum, 22 m height, 72° steep section, 8-seat boat, and approximately 105 seconds in the current simulation profile. Its 3D route is a photo/map-informed approximation; the vehicle follows that route using a 670 m display-distance profile.
 - **French Revolution:** approximately 630 m, 70 km/h maximum, 28 m height, one 360° inversion, and 105 seconds from Coaster.cloud. Its modeled path contains a chain lift, vertical loop, and a 540° horizontal helix; exact track centerline and intermediate speed trace are not publicly measured.
 - **Gyro Swing:** 27 m attraction height, 32 m top height, 96° maximum swing angle, 83 km/h listed maximum, 40 riders, and about 100 seconds from a secondary published reference. Its amplitude envelope and time-by-time speed are simulated approximations.
 - **Gyro Drop:** 70 m tower and 100 km/h listed maximum from the official guide map. The cycle length and acceleration profile are simulator estimates, not a published operating telemetry trace.
 
-Boarding clones the facility vehicle, places the visitor in its seat area, moves the vehicle along the modeled track or ride motion, follows it with the camera, and displays current speed, progress, and elapsed time. For rides without published speed/duration data, the card explicitly identifies their motion as a simulation estimate.
+Boarding hides the external player model, switches to a first-person seat camera, moves the vehicle along its modeled route or ride motion, follows the vehicle with the camera, and displays speed when a published speed is available, plus progress and elapsed time. Rides without published speed data show no numeric speed rather than inventing one. Simulator-only durations and estimated paths are labeled as estimates.
 
 ## Parade behavior
 
 The simulator uses a ten-minute real-time interval measured from page load. Each parade procession lasts about 110 seconds and has a manual preview button. This interval is intentionally a simulator rule, not a recreation of the park's published show timetable. The current winter theme is based on Lotte World's 2026 winter season announcement; the parade floats are original generic winter-themed placeholders rather than exact character or float replicas.
 
 Season themes are selected automatically from the local calendar month. Winter, spring, summer, and autumn currently have separate color palettes and parade decorations; the winter theme is the most developed in this build.
+
+
+## Official ride-video references
+
+The simulator's ride cards link to the following videos published by the verified Lotte World YouTube channel. They are useful visual references for vehicle types and visible ride motion; they do not provide complete surveyed track coordinates or hidden sections.
+
+- Atlantis first-person ride: https://www.youtube.com/watch?v=Mkb5rvyeJBQ
+- French Revolution: https://www.youtube.com/watch?v=yBQsfQS8a6U
+- Gyro Drop: https://www.youtube.com/watch?v=B7DYLBaYOzg
+- Gyro Swing: https://www.youtube.com/watch?v=wB5_ZbwB-ys
+- Gyro Spin: https://www.youtube.com/watch?v=RoZAnGja_Ww
+- Flume Ride: https://www.youtube.com/watch?v=JeykTouSEd8
+- Pharaoh's Fury first-person view: https://www.youtube.com/watch?v=Y9PU9hxLBjM
+- Comet Express: https://www.youtube.com/watch?v=oN_IqwnDzvE
+- Drunken Basket: https://www.youtube.com/watch?v=yJ5sbO-xCa0
+- Sinbad's Adventure first-person view: https://www.youtube.com/watch?v=PCFx0Lm1bxk
+
+Only rides with a matching official channel video are given a direct video link in the simulator. The remaining ride routes are based on official guide-map descriptions and visual inference. Exact track centerlines, elevation profiles, banking, acceleration traces, and obscured/off-camera sections are not published in these materials and are not claimed to be exact.
 
 ## Reference material
 
@@ -93,7 +111,7 @@ The four supplied interior photographs were used as the primary references for t
 ## Roadmap
 
 1. Replace approximate facility coordinates with measured floor-plan positions and verify walkway widths and clearances.
-2. Trace each remaining ride's full track centerline, elevation profile, bank angle, supports, station, and vehicle direction from multi-angle references.
+2. Replace estimated track centerlines with measured track plans or multi-angle survey references, including elevation, banking, supports, stations, dispatch direction, and brakes.
 3. Refine building proportions, storefront ornament, interior materials, roof panel dimensions, and gallery balustrades.
 4. Expand guest behavior with collision avoidance, groups, queues, ice-skating paths, and attraction-specific boarding/exit choreography.
 
