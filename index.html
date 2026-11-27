@@ -1132,9 +1132,9 @@ document.querySelector('#home').onclick=()=>{closeModal();if(currentRide)endRide
 document.querySelector('#labelsBtn').onclick=()=>{showLabels=!showLabels;updateLabels()};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 function updateFacilityRideMotion(now){
+  const t=now/1000;
   for(const f of rideMotionItems){
     if(!f.motionPart)continue;
-    const t=now/1000;
     if(f.motionType==='swing')f.motionPart.rotation.z=Math.sin(t*.75)*.48;
     else if(f.motionType==='spin')f.motionPart.rotation.y=t*.9;
     else if(f.motionType==='drop')f.motionPart.position.y=8.7+Math.sin(t*.55)*1.7;
