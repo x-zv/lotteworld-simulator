@@ -297,14 +297,14 @@ cyl(overheadRig,0,-1.1,0,.5,.5,2,rigMetal,24);
 
 // Signature Adventure entrance: pale tiled facade, inset glazed arch, clock face and burgundy sign.
 const stone=mat(0xd8d0c5,.8),stoneLight=mat(0xf1e9dd,.7),roseStone=mat(0xd7b9b3,.8),darkGlass=mat(0x22313e,.28),burgundy=mat(0x713344,.42),copper=mat(0xb58d55,.42);
-box(scene,0,1,73,66,29,4,stone);
+box(scene,-24.5,1,73,17,29,4,stone);box(scene,24.5,1,73,17,29,4,stone);box(scene,0,28.3,73,32,2.4,4,stone);
 box(scene,-30,2,70,7,27,3,stoneLight);box(scene,30,2,70,7,27,3,stoneLight);
 for(const x of [-24,-18,18,24]){
   box(scene,x,2,68,1.15,23,1.3,stoneLight);
   for(const y of [5,12,19])cyl(scene,x,y,67.2,.78,.78,.42,copper,12);
 }
-box(scene,0,2,70,28,16,1.0,darkGlass);
-box(scene,-16,2,70,3,21,2,stoneLight);box(scene,16,2,70,3,21,2,stoneLight);
+box(scene,-10,2,70,8,16,.18,darkGlass);box(scene,10,2,70,8,16,.18,darkGlass);
+box(scene,-14.2,2,70,2.4,21,2,stoneLight);box(scene,14.2,2,70,2.4,21,2,stoneLight);
 const entryArchPoints=[];
 for(let i=0;i<=36;i++){const a=Math.PI-i*Math.PI/36;entryArchPoints.push([Math.cos(a)*16,19+Math.sin(a)*11,68.85]);}
 curveTube(scene,entryArchPoints,.8,stoneLight,80);
