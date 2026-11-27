@@ -233,21 +233,142 @@ box(scene,-6,.55,-48,.35,2,40,mats.gold);box(scene,6,.55,-48,.35,2,40,mats.gold)
 const lake=new THREE.Mesh(new THREE.CircleGeometry(83,96),mats.water);lake.rotation.x=-Math.PI/2;lake.scale.set(1.18,.76,1);lake.position.set(0,.02,-112);lake.receiveShadow=true;scene.add(lake);
 // island land mass
 const island=new THREE.Mesh(new THREE.CylinderGeometry(57,64,3,64),mats.grass);island.position.set(0,1.2,-112);island.scale.z=.76;island.receiveShadow=true;island.castShadow=true;scene.add(island);
-// castle on island: keep, wings, turrets, spires
-box(scene,0,3,-119,28,24,19,mats.wall);box(scene,0,27,-119,34,4,24,mats.blue);
-for(const x of [-19,19]){box(scene,x,3,-119,12,17,15,mats.wall);cyl(scene,x,20,-119,6,6,5,mats.blue);const sp=new THREE.Mesh(new THREE.ConeGeometry(5,15,8),mats.roof);sp.position.set(x,32,-119);sp.castShadow=true;scene.add(sp)}
-box(scene,0,3,-101,10,15,8,mats.wall);const mainSpire=new THREE.Mesh(new THREE.ConeGeometry(6,18,8),mats.gold);mainSpire.position.set(0,23,-101);scene.add(mainSpire);
-for(let i=0;i<8;i++){const a=i*Math.PI/4;const x=Math.cos(a)*42,z=-112+Math.sin(a)*30;const t=new THREE.Group();t.position.set(x,2,z);scene.add(t);cyl(t,0,0,0,2.8,3.2,2.2,mats.dark);const s=new THREE.Mesh(new THREE.ConeGeometry(2.5,8,8),mats.gold);s.position.y=7;s.castShadow=true;t.add(s)}
+// Magic Castle: pastel limestone and rose stone walls, bright blue tiled conical roofs,
+ // layered towers, arched windows, crenellations, gold finials and a formal bridge approach.
+const castleStone=mat(0xe9dfd0,.78),castleRose=mat(0xd8b7ae,.82),castleTrim=mat(0xf5ecdf,.7);
+const castleBlue=mat(0x1686c2,.45),castleBlueDark=mat(0x17638f,.55),castleGold=mat(0xc7a05c,.35);
+const castleGlass=mat(0x304557,.3);
+function castleWindow(x,y,z,w=1.8,h=3.5){
+  box(scene,x,y,z,w,h,w*.12,castleGlass);
+  box(scene,x-w*.58,y,z,w*.16,h+.45,w*.18,castleTrim);
+  box(scene,x+w*.58,y,z,w*.16,h+.45,w*.18,castleTrim);
+  box(scene,x,y+h/2+.25,z,w+.32,.35,w*.2,castleTrim);
+  box(scene,x,y-h/2-.15,z,w+.28,.3,w*.2,castleTrim);
+  const arc=[];for(let i=0;i<=16;i++){const a=Math.PI-i*Math.PI/16;arc.push([x+Math.cos(a)*w/2,y+h/2+Math.sin(a)*w/2,z]);}
+  curveTube(scene,arc,.16,castleTrim,28);
+}
+function castleTurret(x,z,r,h,front=true){
+  const baseY=3;
+  cyl(scene,x,baseY,z,r,r,h,castleStone,32);
+  cyl(scene,x,baseY+h-.3,z,r*1.12,r*1.12,.6,castleTrim,32);
+  cyl(scene,x,baseY+h+.2,z,r*.9,r*.9,.35,castleBlueDark,32);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(r*1.35,h*.66,20),castleBlue);
+  roof.position.set(x,baseY+h+h*.32,z);roof.castShadow=true;scene.add(roof);
+  const roofBand=new THREE.Mesh(new THREE.TorusGeometry(r*.92,.16,8,32),castleBlueDark);
+  roofBand.rotation.x=Math.PI/2;roofBand.position.set(x,baseY+h+.3,z);scene.add(roofBand);
+  const finial=new THREE.Mesh(new THREE.ConeGeometry(.42,2.4,10),castleGold);finial.position.set(x,baseY+h+h*.66+1,z);scene.add(finial);
+  sphere(scene,x,baseY+h+h*.66+2.2,z,.24,.24,.24,castleGold);
+  if(front){castleWindow(x,baseY+h*.48,z+r*.93,Math.min(1.5,r*.45),Math.min(3.7,h*.35));}
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;box(scene,x+Math.cos(a)*r*.78,baseY+h-.1,z+Math.sin(a)*r*.78,.55,.75,.55,castleTrim);}
+}
+box(scene,0,1.8,-121,38,2.2,34,castleStone);
+box(scene,-8,4,-121,17,18,20,castleStone);
+box(scene,8,4,-121,17,18,20,castleStone);
+box(scene,0,20,-121,20,7,20,castleRose);
+box(scene,-8,4,-109.8,1.4,17,1.0,castleTrim);
+box(scene,8,4,-109.8,1.4,17,1.0,castleTrim);
+box(scene,0,3.4,-109.9,14,1.3,1.2,castleTrim);
+const castleGateArch=[];for(let i=0;i<=32;i++){const a=Math.PI-i*Math.PI/32;castleGateArch.push([Math.cos(a)*7,14+Math.sin(a)*7,-109.7]);}
+curveTube(scene,castleGateArch,.9,castleTrim,70);
+const gateDark=new THREE.Mesh(new THREE.PlaneGeometry(12.6,13.8),new THREE.MeshBasicMaterial({color:0x263a4a}));gateDark.position.set(0,10,-109.78);scene.add(gateDark);
+box(scene,0,2.6,-109.6,12.2,1,1,castleGold);
+box(scene,0,18.6,-109.65,15,1.1,1.1,castleTrim);
+const castleSign=new THREE.Mesh(new THREE.PlaneGeometry(15,2.1),new THREE.MeshBasicMaterial({map:makeCanvasSign('MAGIC CASTLE','LOTTE WORLD','#17618d','#fff2d5')}));
+castleSign.position.set(0,21.2,-109.25);scene.add(castleSign);
+box(scene,0,21,-127,23,15,15,castleStone);
+box(scene,0,35,-127,28,2,18,castleRose);
+for(const x of [-9,9]){castleWindow(x,27,-119.2,2,4);castleWindow(x,12,-110,2,4);}
+castleWindow(0,29,-119.1,2.5,5);
+for(const x of [-14,14]){box(scene,x,19,-110,4,3,3,castleTrim);box(scene,x,22,-110,2.7,3,2.5,castleRose);}
+castleTurret(-17,-126,5.4,16,true);
+castleTurret(17,-126,5.4,16,true);
+castleTurret(-13,-109,4.2,12,true);
+castleTurret(13,-109,4.2,12,true);
+castleTurret(0,-132,5.3,22,false);
+castleTurret(-28,-119,3.4,11,false);
+castleTurret(28,-119,3.4,11,false);
+for(const x of [-10,-5,5,10]){box(scene,x,36,-119,1.1,4,1.1,castleTrim);const sp=new THREE.Mesh(new THREE.ConeGeometry(1.1,2.5,8),castleBlue);sp.position.set(x,39,-119);scene.add(sp);}
+for(let x=-17;x<=17;x+=4){box(scene,x,20,-110,.7,1.1,.7,castleGold);}
+for(const z of [-129,-125,-121])box(scene,0,36,z,30,.35,.35,castleTrim);
+box(scene,0,2,-85,16,.8,48,castleStone);
+box(scene,-8,2.8,-85,.75,2,48,castleTrim);box(scene,8,2.8,-85,.75,2,48,castleTrim);
+for(let z=-106;z<=-64;z+=5){
+  for(const x of [-8,8]){
+    box(scene,x,3,z,.8,2,.8,castleTrim);
+    sphere(scene,x,4.15,z,.46,.46,.46,castleGold);
+  }
+}
+for(const x of [-11,11])for(const z of [-104,-87,-70]){
+  cyl(scene,x,2.8,z,.22,.3,3.3,mat(0x273847));
+  sphere(scene,x,6.3,z,.55,.65,.55,mat(0xffdda0));
+}
+
 // perimeter paths
 const pathMat=mat(0xd5d0c3);const path=new THREE.Mesh(new THREE.TorusGeometry(69,3,8,100),pathMat);path.rotation.x=Math.PI/2;path.position.set(0,2.9,-112);path.scale.set(1.15,.75,1);scene.add(path);
-// landmark ride silhouettes around island (non-detailed placeholders)
-function coasterTrack(points,r=.75){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,180,r,8,false),mats.gold);mesh.castShadow=true;scene.add(mesh)}
-coasterTrack([[-65,5,-155],[-52,22,-166],[-35,10,-150],[-12,28,-164],[10,7,-152],[34,24,-160],[56,8,-140]],.85);
-for(let i=0;i<8;i++){const x=-55+i*15;box(scene,x,1,-155,1,13,1,mats.dark)}
-// gyro drop tower
-cyl(scene,57,2,-91,3,4,48,mats.dark);cyl(scene,57,48,-91,7,7,2,mats.gold);
-// ferris / observation wheel placeholder
-const wheel=new THREE.Mesh(new THREE.TorusGeometry(17,1.1,10,64),mats.blue);wheel.position.set(-58,23,-95);scene.add(wheel);for(let i=0;i<12;i++){const a=i*Math.PI/6;const x=-58+Math.cos(a)*17,y=23+Math.sin(a)*17;const spoke=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,34,8),mats.gold);spoke.position.set(x,y,-95);spoke.rotation.z=a;scene.add(spoke)}
+// Magic Island signature rides: blue steel coaster, faux rock temple, gyro drop and gyro swing.
+const coasterBlue=mat(0x126ea3,.42),coasterBlueLight=mat(0x48a2c9,.38),supportWhite=mat(0xe5e3dc,.65),rockMat=mat(0x716d67,.95),rockDark=mat(0x4e514e,.95);
+function addRailTrack(points,baseColor=coasterBlue){
+  const center=points.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+  const curve=new THREE.CatmullRomCurve3(center);
+  for(const side of [-.52,.52]){
+    const pts=[];for(let i=0;i<=120;i++){const t=i/120,p=curve.getPointAt(t),tan=curve.getTangentAt(t);
+      const sideVec=new THREE.Vector3(-tan.z,0,tan.x).normalize().multiplyScalar(side);
+      pts.push([p.x+sideVec.x,p.y,p.z+sideVec.z]);}
+    curveTube(scene,pts,.26,baseColor,150);
+  }
+  for(let i=0;i<=42;i++){
+    const t=i/42,p=curve.getPointAt(t),tan=curve.getTangentAt(t);
+    const sideVec=new THREE.Vector3(-tan.z,0,tan.x).normalize();
+    beamBetween(scene,[p.x-sideVec.x*.72,p.y-.2,p.z-sideVec.z*.72],[p.x+sideVec.x*.72,p.y-.2,p.z+sideVec.z*.72],.15,coasterBlueLight);
+    if(i%3===0&&p.y>4)beamBetween(scene,[p.x,p.y-1,p.z],[p.x,p.y-5,p.z],.22,supportWhite);
+  }
+}
+const atlantisRockPositions=[[-48,4,-149],[-40,5,-155],[-31,4,-150],[-20,6,-157],[-7,4,-151],[8,5,-154],[22,4,-150],[37,5,-153]];
+atlantisRockPositions.forEach((p,i)=>sphere(scene,p[0],p[1],p[2],6+(i%3),4+(i%2),5, i%2?rockMat:rockDark));
+const templeStone=mat(0xbeb3a2,.95),templeTrim=mat(0xe7d4b7,.8),templeDark=mat(0x342f2d,.9);
+box(scene,-31,4,-148,17,13,7,templeStone);
+for(const x of [-38,-31,-24]){
+  cyl(scene,x,4,-143.9,1.05,1.2,11,templeTrim,12);
+  cyl(scene,x,14.5,-143.9,1.55,1.55,.65,templeTrim,12);
+}
+box(scene,-31,16,-143.6,19,1.3,2,templeTrim);
+addRailTrack([[-65,8,-155],[-54,21,-161],[-42,12,-148],[-27,8,-145],[-12,26,-159],[5,12,-150],[23,22,-157],[42,9,-145],[59,15,-130]],coasterBlue);
+for(let x=-60;x<=55;x+=12)beamBetween(scene,[x,1,-145],[x,10+(Math.abs(x)%24),-145],.32,supportWhite);
+const gyroDropX=57,gyroDropZ=-91,gyroDropHeight=48;
+cyl(scene,gyroDropX,2,gyroDropZ,5,5,1.6,mat(0x4b5763));
+for(let i=0;i<4;i++){
+  const a=Math.PI/4+i*Math.PI/2,x=gyroDropX+Math.cos(a)*3.3,z=gyroDropZ+Math.sin(a)*3.3;
+  beamBetween(scene,[x,2,z],[gyroDropX+Math.cos(a)*2.2,gyroDropHeight,z],.42,coasterBlue);
+}
+for(let y=6;y<gyroDropHeight;y+=6){
+  const scale=1-(y/gyroDropHeight)*.22;
+  const pts=[[gyroDropX-3*scale,y,gyroDropZ-3*scale],[gyroDropX+3*scale,y,gyroDropZ-3*scale],[gyroDropX+3*scale,y,gyroDropZ+3*scale],[gyroDropX-3*scale,y,gyroDropZ+3*scale],[gyroDropX-3*scale,y,gyroDropZ-3*scale]];
+  curveTube(scene,pts,.2,coasterBlueLight,24);
+  beamBetween(scene,[gyroDropX-3*scale,y,gyroDropZ-3*scale],[gyroDropX+3*scale,y+5,gyroDropZ+3*scale],.14,coasterBlueLight);
+  beamBetween(scene,[gyroDropX+3*scale,y,gyroDropZ-3*scale],[gyroDropX-3*scale,y+5,gyroDropZ+3*scale],.14,coasterBlueLight);
+}
+cyl(scene,gyroDropX,gyroDropHeight-2,gyroDropZ,4,4,2,coasterBlueLight);
+const gyroGondola=new THREE.Group();gyroGondola.position.set(gyroDropX,32,gyroDropZ);scene.add(gyroGondola);
+const gyroRing=new THREE.Mesh(new THREE.TorusGeometry(5.2,.55,12,64),mat(0xe7b32d));gyroRing.rotation.x=Math.PI/2;gyroGondola.add(gyroRing);
+for(let i=0;i<20;i++){const a=i*Math.PI*2/20,x=Math.cos(a)*5.2,z=Math.sin(a)*5.2;
+  const seat=box(gyroGondola,x,0,z,1.1,1.1,.85,mat(i%2?0xd64230:0xf1c13b));seat.rotation.y=-a;
+}
+const gyroSwing=new THREE.Group();gyroSwing.position.set(-57,0,-96);scene.add(gyroSwing);
+const swingWhite=mat(0xf0eee7,.65),swingRed=mat(0xb85d4f,.55);
+beamBetween(gyroSwing,[-10,1,0],[0,31,0],1.05,swingWhite);
+beamBetween(gyroSwing,[10,1,0],[0,31,0],1.05,swingWhite);
+beamBetween(gyroSwing,[-10,1,0],[-2,17,0],.6,swingWhite);
+beamBetween(gyroSwing,[10,1,0],[2,17,0],.6,swingWhite);
+beamBetween(gyroSwing,[-10,1,0],[10,1,0],.8,swingRed);
+beamBetween(gyroSwing,[-3,31,0],[3,31,0],1,swingWhite);
+const swingArm=new THREE.Group();swingArm.position.set(0,28,0);gyroSwing.add(swingArm);
+beamBetween(swingArm,[0,0,0],[0,-13,0],.65,swingRed);
+const swingSeatRing=new THREE.Mesh(new THREE.TorusGeometry(7.2,.55,12,56),mat(0xc94836));swingSeatRing.rotation.x=Math.PI/2;swingSeatRing.position.set(0,-14,0);swingArm.add(swingSeatRing);
+for(let i=0;i<24;i++){const a=i*Math.PI*2/24,x=Math.cos(a)*7.2,z=Math.sin(a)*7.2;
+  const pod=box(swingArm,x,-14,z,1.2,1.1,1,mat(i%2?0xe8bd43:0xd94a35));pod.rotation.y=-a;
+}
+const swingCanopy=new THREE.Mesh(new THREE.TorusGeometry(7.4,.3,8,56),mat(0xf2e4c7));swingCanopy.rotation.x=Math.PI/2;swingCanopy.position.set(0,-12.4,0);swingArm.add(swingCanopy);
+
 // urban context blocks outside park perimeter
 for(let i=0;i<7;i++){const x=-160+i*52;box(scene,x,0,-205,28,22+(i%3)*13,24,mat(i%2?0x9babb2:0xb9b6a9))}
 for(let i=0;i<5;i++){const x=125+i*13;box(scene,x,0,-30-i*36,9,30+(i%2)*16,13,mat(0x899ba6))}
