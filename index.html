@@ -84,11 +84,11 @@ button:hover{background:#24415a}
 <div id="scene"></div><div id="labels"></div>
 <div id="loading">롯데월드 기본 공간을 구성하는 중…</div>
 <div class="hud top">
-  <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span>WALKABLE BLOCKOUT · 3D WORLD</span></div>
+  <div class="brand"><strong>LOTTE WORLD / SIMULATOR</strong><span id="floorStatus">UNDERLAND · B1F</span></div>
   <div class="panel">초기 외부 구조 빌드<br>어드벤처 돔 · 정문 광장 · 매직아일랜드 · 석촌호수 · 매직캐슬<div id="paradeStatus" style="margin-top:9px;padding-top:8px;border-top:1px solid #ffffff20;color:#fff1cf">계절별 퍼레이드<br>시즌에 맞는 테마가 자동 선택됩니다</div><span style="color:#8fa5ba">좌표: 공개 안내도 비례 추적 · 실측 CAD 아님<br>가상 퍼레이드: 10분 간격</span></div>
 </div>
 <div class="hud bottom">
-  <div class="hint">WASD 이동 · 마우스 드래그 시점 회전 · E 이용하기</div>
+  <div class="hint">WASD 이동 · Shift 달리기 · 마우스 드래그 시점 회전 · E 이용하기</div>
   <div class="controls"><button id="paradeNow">퍼레이드 미리보기</button><button id="home">초기 시점</button><button id="labelsBtn">명칭 표시</button></div>
 </div>
 <div id="interactionPrompt" aria-live="polite">주변 시설에 가까이 가면 이용 안내가 표시됩니다.</div>
@@ -767,6 +767,49 @@ document.querySelector('#paradeNow').addEventListener('click',startSeasonalParad
 // ---------------------------------------------------------------------------
 const floorOrder=['B1F','1F','2F','3F','4F'];
 const floorHeight={'B1F':-7.5,'1F':0.5,'2F':9.5,'3F':18.5,'4F':27.5,'매직아일랜드':2.7};
+
+// 1F island approach: a dedicated pedestrian bridge with raised rails and lights.
+{
+  const bridge=new THREE.Group();scene.add(bridge);
+  const bridgeDeck=mat(0xc3c3bb,.88),bridgeEdge=mat(0x777f82,.72);
+  box(bridge,0,-.08,-60,11.2,.58,17.5,bridgeDeck);
+  box(bridge,0,.49,-60,9.5,.08,17.5,mat(0xe5dfd1,.8));
+  for(const side of [-1,1]){
+    box(bridge,side*5.35,.48,-60,.28,1.18,17.5,bridgeEdge);
+    box(bridge,side*5.35,1.02,-60,.12,.1,17.5,mats.gold);
+    for(let z=-52.5;z>=-67.5;z-=3.75)box(bridge,side*5.35,.48,z,.34,1.22,.34,bridgeEdge);
+    for(const z of [-54,-66]){
+      cyl(bridge,side*4.45,.5,z,.12,.16,2.3,mats.gold,12);
+      sphere(bridge,side*4.45,2.95,z,.28,.28,.28,mat(0xffe0a0,.35));
+    }
+  }
+  box(bridge,0,.54,-60,.22,.04,16.8,mat(0xf7e9c8,.55));
+}
+
+// B1F main gate: stone piers, illuminated sign and three entry lanes.
+{
+  const gate=new THREE.Group();gate.position.set(36,floorHeight['B1F'],63);scene.add(gate);
+  const stone=mat(0xe4ded2,.72),trim=mat(0xc6a66c,.4),metal=mat(0x475763,.48);
+  for(const x of [-8.4,8.4]){
+    box(gate,x,0,0,1.25,7.2,1.35,stone);
+    box(gate,x,0,.72,1.42,.32,.16,trim);
+    box(gate,x,6.65,0,1.55,.42,1.6,trim);
+  }
+  box(gate,0,6.25,0,18.2,1.1,1.5,stone);
+  box(gate,0,6.9,.08,18.4,.22,1.65,trim);
+  const gateSign=new THREE.Mesh(new THREE.PlaneGeometry(13.8,2.05),
+    new THREE.MeshBasicMaterial({map:makeCanvasSign('LOTTE WORLD','정문 게이트 · UNDERLAND B1F','#263b4d','#fff1ce'),side:THREE.DoubleSide}));
+  gateSign.position.set(0,4.75,.83);gate.add(gateSign);
+  for(const x of [-4.2,0,4.2]){
+    cyl(gate,x,0,-2.2,.24,.28,1.25,metal,18);
+    cyl(gate,x,1.17,-2.2,.3,.3,.12,trim,18);
+    beamBetween(gate,[x,1.1,-2.2],[x+(x===0?1.25:1.05),1.1,-2.2],.055,trim);
+  }
+  for(const x of [-6.25,6.25]){
+    const post=new THREE.Mesh(new THREE.BoxGeometry(.12,1.25,.12),metal);post.position.set(x,.7,-2.2);gate.add(post);
+  }
+}
+
 const facilityCatalog=[];
 function addItems(floor,kind,names,extra={}){names.forEach((name,i)=>facilityCatalog.push({id:'f'+facilityCatalog.length,name,floor,kind,...extra}))}
 addItems('B1F','ride',['드림보트','4D 슈팅씨어터','와일드밸리','와일드정글','와일드윙']);
@@ -1579,7 +1622,7 @@ sphere(player,0,1.65,0,.48,.48,.48,skinMat);
 box(player,0,.8,.48,.65,.18,.2,mat(0xe8be73));
 player.position.set(0,floorHeight['1F'],67);
 // B1F Adventure entrance spawn, oriented toward the indoor concourse.
-const B1_ENTRY_SPAWN=new THREE.Vector3(0,floorHeight['B1F'],-56);
+const B1_ENTRY_SPAWN=new THREE.Vector3(36,floorHeight['B1F'],52);
 player.position.copy(B1_ENTRY_SPAWN);
 const spawnPosition=player.position.clone();
 camera.position.set(0,floorHeight['B1F']+7,-39);
@@ -1771,8 +1814,8 @@ function updateCrowd(now,dt){
  }
 }
 
-controls.target.set(player.position.x,player.position.y+1.25,player.position.z);
-camera.position.set(0,player.position.y+16,player.position.z+25);
+controls.target.set(player.position.x,player.position.y+1.35,player.position.z);
+camera.position.set(player.position.x,player.position.y+8.5,player.position.z+15.5);
 controls.update();
 
 const keyState={};const touchState={forward:false,back:false,left:false,right:false};
@@ -1793,6 +1836,12 @@ function currentFloor(){
   let best='1F',dist=Infinity;
   for(const [name,y] of Object.entries(floorHeight)){const d=Math.abs(player.position.y-y);if(d<dist){dist=d;best=name}}
   return best;
+}
+function updateFloorStatus(){
+  const el=document.querySelector('#floorStatus');if(!el)return;
+  const floor=currentFloor();
+  const label=floor==='매직아일랜드'?'MAGIC ISLAND':({B1F:'UNDERLAND · B1F','1F':'ADVENTURE · 1F','2F':'ADVENTURE · 2F','3F':'ADVENTURE · 3F','4F':'ADVENTURE · 4F'}[floor]||floor);
+  if(el.dataset.floor!==floor){el.dataset.floor=floor;el.textContent=label;}
 }
 function nearestInteractable(){
   if(currentRide||elevatorTransit||foodTransit||modal.classList.contains('open'))return null;
@@ -2340,12 +2389,13 @@ function updateWalk(dt){
   if(currentRide||elevatorTransit||foodTransit||modal.classList.contains('open'))return;
   const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
   const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize();
-  let forwardInput=(keyState.w||keyState.arrowup||touchState.forward?1:0)-(keyState.s||keyState.arrowdown||touchState.back?1:0);
-  let sideInput=(keyState.d||keyState.arrowright||touchState.right?1:0)-(keyState.a||keyState.arrowleft||touchState.left?1:0);
+  const forwardInput=(keyState.w||keyState.arrowup||touchState.forward?1:0)-(keyState.s||keyState.arrowdown||touchState.back?1:0);
+  const sideInput=(keyState.d||keyState.arrowright||touchState.right?1:0)-(keyState.a||keyState.arrowleft||touchState.left?1:0);
   const direction=forward.clone().multiplyScalar(forwardInput).add(right.multiplyScalar(sideInput));
   if(direction.lengthSq()>0){
-    direction.normalize();const speed=dt*19;
-    player.position.addScaledVector(direction,speed);
+    direction.normalize();
+    const speed=keyState.shift?4.2:1.75;
+    player.position.addScaledVector(direction,dt*speed);
     player.rotation.y=Math.atan2(direction.x,direction.z);
   }
   const onIsland=player.position.z<=-67;
@@ -2354,25 +2404,40 @@ function updateWalk(dt){
     player.position.x=THREE.MathUtils.clamp(player.position.x,-62,62);
     player.position.z=THREE.MathUtils.clamp(player.position.z,-166,-67);
     const ellipse=(player.position.x/63)**2+((player.position.z+112)/49)**2;
-    if(ellipse>1.12){player.position.z=-66.5;player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5)}
+    if(ellipse>1.12){
+      const scale=Math.sqrt(1.12/ellipse)*.995;
+      player.position.x*=scale;
+      player.position.z=-112+(player.position.z+112)*scale;
+    }
   }else{
-    if(player.position.y===floorHeight['매직아일랜드'])player.position.y=floorHeight['1F'];
-    player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
-    player.position.z=THREE.MathUtils.clamp(player.position.z,-29,87);
-    if(currentFloor()!=='1F')player.position.z=THREE.MathUtils.clamp(player.position.z,-23,63);
-    // On the bridge, keep the visitor on the deck over the lake.
-    if(player.position.z<-30&&player.position.z>-67)player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5);
+    if(Math.abs(player.position.y-floorHeight['매직아일랜드'])<.05)player.position.y=floorHeight['1F'];
+    const floor=currentFloor();
+    if(floor==='B1F'){
+      player.position.y=floorHeight['B1F'];
+      player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
+      player.position.z=THREE.MathUtils.clamp(player.position.z,-49,65);
+    }else if(floor==='1F'){
+      player.position.y=floorHeight['1F'];
+      player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
+      player.position.z=THREE.MathUtils.clamp(player.position.z,-67,87);
+      if(player.position.z<-53&&player.position.z>-67)player.position.x=THREE.MathUtils.clamp(player.position.x,-5.0,5.0);
+    }else{
+      const y=floorHeight[floor]??floorHeight['1F'];
+      player.position.y=y;
+      player.position.x=THREE.MathUtils.clamp(player.position.x,-69,69);
+      player.position.z=THREE.MathUtils.clamp(player.position.z,-23,63);
+    }
   }
-  if(player.position.z>63&&currentFloor()==='1F')player.position.y=floorHeight['1F'];
-  const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
-  const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
+  const target=new THREE.Vector3(player.position.x,player.position.y+1.35,player.position.z);
+  const delta=target.clone().sub(controls.target);
+  camera.position.add(delta);controls.target.copy(target);controls.update();
 }
 function updateInteraction(){
   renderPrompt();
 }
 
 
-document.querySelector('#home').onclick=()=>{closeModal();if(currentRide)endRide();player.position.copy(spawnPosition);player.visible=true;camera.position.set(0,player.position.y+8,player.position.z+19);controls.target.set(player.position.x,player.position.y+1.25,player.position.z);controls.update()};
+document.querySelector('#home').onclick=()=>{closeModal();if(currentRide)endRide();player.position.copy(spawnPosition);player.visible=true;camera.position.set(player.position.x,player.position.y+8,player.position.z+15.5);controls.target.set(player.position.x,player.position.y+1.25,player.position.z);controls.update()};
 document.querySelector('#labelsBtn').onclick=()=>{showLabels=!showLabels;updateLabels()};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 function updateFacilityRideMotion(now){
@@ -2413,7 +2478,7 @@ function updateFacilityRideMotion(now){
     }else if(f.motionType==='balloon')f.motionPart.position.y=Math.sin(t*.6)*.22;
   }
 }
-let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();if(!currentRide)controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
+let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();updateFloorStatus();if(!currentRide)controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 window.__LOTTE_SIM_READY__=true;
 const bootLoader=document.querySelector('#loading');
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
