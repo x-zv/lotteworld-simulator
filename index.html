@@ -1191,7 +1191,7 @@ function buildFacilityModel(f){
       const miniTrain=new THREE.Group();g.add(miniTrain);
       for(let j=0;j<3;j++){const car=new THREE.Group();car.position.z=-j*1.15;miniTrain.add(car);box(car,0,.45,0,1.45,.75,1,trainMat);box(car,0,.95,0,1.15,.18,.78,rail);}
       f.motionPart=miniTrain;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.014;f.trackPhase=.52;rideMotionItems.push(f);
-else if(/풍선비행|비행|풍선/.test(f.name)){
+    }else if(/풍선비행|비행|풍선/.test(f.name)){
       cyl(g,0,.65,0,2.7,2.7,.35,mat(0x6c7c88,.6));
       const envelopeColors=[0xe9bf45,0x4a9978,0xe6e4d9,0xd76a3f,0xe0c452];
       for(let j=0;j<5;j++){
