@@ -899,7 +899,7 @@ const rideSpecs={
   source:'공개 시설 제원 자료'
  },
  '자이로드롭':{
-  maxHeightM:70,maxSpeedKmh:100,seats:40,rideType:'drop',simDurationSec:48,
+  maxHeightM:70,maxSpeedKmh:100,seats:40,rideType:'drop',simDurationSec:24.5,
   elements:'승강 → 상단 정지 → 수직 자유낙하 → 제동',
   source:'롯데월드 공식 가이드맵(높이·최고속도); 시뮬레이션 사이클 시간은 추정'
  },
@@ -1565,6 +1565,8 @@ function buildFacilityModel(f){
   return g;
 }
 facilityCatalog.forEach(f=>{buildFacilityModel(f);facilities.push(f)});
+// Precompute each physical track profile once; animation frames only interpolate this table.
+for(const ride of rideMotionItems){if(ride.motionPath)ride.ridePhysics=buildRidePhysics(ride);}
 
 // A single walkable avatar. Orbit controls become a third-person follow camera.
 const player=new THREE.Group();scene.add(player);
@@ -1838,6 +1840,79 @@ function ridePhaseLabel(name,progress){
  }
  return progress>=.995?'도착':'주행 중';
 }
+function rideBrakeZone(name,progress){
+ if(name==='아트란티스'){
+  if(progress>=.28&&progress<.36)return 8.0;
+  if(progress>=.48&&progress<.58)return 5.0;
+  if(progress>=.76&&progress<.82)return 3.8;
+  if(progress>=.90&&progress<.995)return 2.8;
+ }
+ if(name==='후렌치레볼루션'){
+  if(progress>=.78&&progress<.84)return 6.0;
+  if(progress>=.91&&progress<.995)return 2.8;
+ }
+ if(progress>=.965&&progress<.999)return 2.2;
+ return null;
+}
+function buildRidePhysics(f){
+ if(!f.motionPath)return null;
+ const spec=f.rideSpec||{},name=f.name||'';
+ const samples=900;
+ const routeLength=spec.lengthM||Math.max(f.motionPath.getLength(),(spec.simDurationSec||42)*4.2);
+ const ds=routeLength/samples;
+ const maxSpeed=(spec.maxSpeedKmh||(
+  name==='후룸라이드'?42:name==='와일드밸리'?48:name==='와일드정글'?28:
+  name==='와일드윙'?55:name==='혜성특급'?52:name==='월드모노레일'?32:40
+ ))/3.6;
+ const table=[{time:0,progress:0,distance:0,speed:0,height:f.motionPath.getPointAt(0).y,acceleration:0}];
+ let speed=name==='후렌치레볼루션'?2.6:(name==='아트란티스'?.8:2.4),time=0,prev=f.motionPath.getPointAt(0);
+ for(let i=1;i<=samples;i++){
+  const progress=i/samples,point=f.motionPath.getPointAt(progress);
+  const grade=(point.y-prev.y)/ds;
+  const drag=name.includes('후룸')||name.includes('드림보트')||name.includes('와일드밸리')?.026:.012;
+  let accel=-9.81*grade-.10-drag*speed*speed;
+  let nextSpeed;
+  if(name==='후렌치레볼루션'&&progress<=.22){
+   // Chain lift: the train crawls uphill rather than pretending gravity accelerates it.
+   nextSpeed=2.6+1.0*Math.min(1,progress/.22);
+   accel=(nextSpeed-speed)/(Math.max(.001,ds/Math.max(1,speed)));
+  }else if(name==='아트란티스'&&progress<=.13){
+   // LSM launch force adds energy, while the uphill track still consumes it.
+   accel+=7.2;
+   nextSpeed=Math.sqrt(Math.max(0,speed*speed+2*accel*ds));
+  }else{
+   if(!spec.lengthM)accel+=.85; // powered indoor vehicles maintain a gentle drive
+   if(name==='아트란티스'&&progress>.58&&progress<.76)accel+=.35;
+   nextSpeed=Math.sqrt(Math.max(0,speed*speed+2*accel*ds));
+  }
+  const brakeTarget=rideBrakeZone(name,progress);
+  if(brakeTarget!==null){
+   const brakeDecel=7.5;
+   nextSpeed=Math.max(brakeTarget,Math.sqrt(Math.max(0,nextSpeed*nextSpeed-2*brakeDecel*ds)));
+  }
+  nextSpeed=Math.min(maxSpeed,nextSpeed);
+  if(nextSpeed<.9&&progress<.94&&name!=='후렌치레볼루션')nextSpeed=.9;
+  const meanSpeed=Math.max(.65,(speed+nextSpeed)*.5);
+  const stepTime=ds/meanSpeed;
+  const actualAccel=(nextSpeed-speed)/Math.max(.001,stepTime);
+  time+=stepTime;
+  table.push({time,progress,distance:i*ds,speed:nextSpeed,height:point.y,acceleration:actualAccel});
+  speed=nextSpeed;prev=point;
+ }
+ return {table,totalTime:time,lengthM:routeLength,maxSpeedKmh:maxSpeed*3.6};
+}
+function sampleRidePhysics(physics,elapsedSec){
+ if(!physics||!physics.table?.length)return {progress:0,distanceM:0,speedKmh:0,accelerationMS2:0,elapsedSec,durationSec:0};
+ const t=THREE.MathUtils.clamp(elapsedSec,0,physics.totalTime),table=physics.table;
+ let lo=0,hi=table.length-1;
+ while(lo<hi-1){const mid=(lo+hi)>>1;if(table[mid].time<t)lo=mid;else hi=mid;}
+ const a=table[lo],b=table[hi],u=THREE.MathUtils.clamp((t-a.time)/Math.max(.0001,b.time-a.time),0,1);
+ const lerp=(x,y)=>x+(y-x)*u;
+ const speed=lerp(a.speed,b.speed);
+ return {progress:lerp(a.progress,b.progress),distanceM:lerp(a.distance,b.distance),speedKmh:speed*3.6,
+  accelerationMS2:lerp(a.acceleration,b.acceleration),heightM:lerp(a.height,b.height),
+  elapsedSec:t,durationSec:physics.totalTime,phase:'운행 중'};
+}
 function getRideState(spec,elapsedSec){
  const duration=spec?.durationSec??spec?.simDurationSec??18;
  const t=THREE.MathUtils.clamp(elapsedSec,0,duration);
@@ -1853,27 +1928,55 @@ function getRideState(spec,elapsedSec){
  const speed=spec?.maxSpeedKmh?spec.maxSpeedKmh*Math.abs(Math.sin(Math.PI*progress)):0;
  return {progress:THREE.MathUtils.clamp(progress,0,1),distanceM:spec?.lengthM?spec.lengthM*progress:null,speedKmh:speed,elapsedSec:t,durationSec:duration};
 }
-function getDropState(elapsedSec,durationSec=48){
+function getDropState(elapsedSec,durationSec=24.5){
+ // 70m lift, a short summit pause, gravity-driven free fall, coast and physical brake.
+ const g=9.81,maxSpeed=100/3.6,dropHeight=70;
+ const liftEnd=13,holdEnd=15.8,bottomHoldEnd=18.5;
+ const timeToCap=maxSpeed/g;
+ const distanceToCap=.5*g*timeToCap*timeToCap;
+ const coastDistance=9;
+ const brakeDistance=Math.max(1,dropHeight-distanceToCap-coastDistance);
+ const brakeAcceleration=maxSpeed*maxSpeed/(2*brakeDistance);
+ const coastTime=coastDistance/maxSpeed;
+ const brakeTime=maxSpeed/brakeAcceleration;
+ const dropEnd=holdEnd+timeToCap+coastTime+brakeTime;
  const t=THREE.MathUtils.clamp(elapsedSec,0,durationSec);
- const liftEnd=17,holdEnd=20,dropEnd=23.78,brakeEnd=29;
- let height=0,speed=0,phase='승강';
+ let height=0,speed=0,acceleration=0,phase='승강';
  if(t<liftEnd){
-  const p=t/liftEnd;height=70*(p*p*(3-2*p));
+  const p=t/liftEnd,smooth=p*p*(3-2*p);
+  height=dropHeight*smooth;
+  speed=dropHeight*6*p*(1-p)/liftEnd;
+  acceleration=dropHeight*6*(1-2*p)/(liftEnd*liftEnd);
  }else if(t<holdEnd){
-  height=70;phase='상단 정지';
+  height=dropHeight;phase='상단 정지';
  }else if(t<dropEnd){
-  const p=(t-holdEnd)/(dropEnd-holdEnd);
-  const smooth=p*p*(3-2*p);
-  height=70*(1-smooth);
-  const derivative=6*p*(1-p);
-  speed=70*derivative/(dropEnd-holdEnd)*3.6;
-  phase='낙하';
- }else if(t<brakeEnd){
-  height=0;phase='제동';
+  const td=t-holdEnd;
+  let fallen=0;
+  if(td<timeToCap){
+   fallen=.5*g*td*td;
+   speed=g*td;
+   acceleration=g;
+   phase='자유낙하 · 가속';
+  }else if(td<timeToCap+coastTime){
+   const coastT=td-timeToCap;
+   fallen=distanceToCap+maxSpeed*coastT;
+   speed=maxSpeed;
+   acceleration=0;
+   phase='최고 속도 유지';
+  }else{
+   const brakeT=td-timeToCap-coastTime;
+   fallen=distanceToCap+coastDistance+maxSpeed*brakeT-.5*brakeAcceleration*brakeT*brakeT;
+   speed=Math.max(0,maxSpeed-brakeAcceleration*brakeT);
+   acceleration=-brakeAcceleration;
+   phase='자기장·유압 제동';
+  }
+  height=Math.max(0,dropHeight-fallen);
+ }else if(t<bottomHoldEnd){
+  height=0;phase='하단 정지';
  }else{
   height=0;phase='하차 준비';
  }
- return {heightM:height,speedKmh:Math.min(100,speed),phase,progress:t/durationSec,elapsedSec:t,durationSec};
+ return {heightM:height,speedKmh:speed*3.6,accelerationMS2:acceleration,verticalG:acceleration/g,phase,progress:THREE.MathUtils.clamp(t/durationSec,0,1),elapsedSec:t,durationSec};
 }
 function setRideHud(ride,state){
  const hud=document.querySelector('#rideHUD');if(!hud)return;
