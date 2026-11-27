@@ -1971,7 +1971,7 @@ function getDropState(elapsedSec,durationSec=24.5){
    const brakeT=td-timeToCap-coastTime;
    fallen=distanceToCap+coastDistance+maxSpeed*brakeT-.5*brakeAcceleration*brakeT*brakeT;
    speed=Math.max(0,maxSpeed-brakeAcceleration*brakeT);
-   acceleration=-brakeAcceleration;
+   acceleration=brakeAcceleration;
    phase='자기장·유압 제동';
   }
   height=Math.max(0,dropHeight-fallen);
@@ -2271,7 +2271,6 @@ function updateRide(now){
     const focusY=f.motionType==='swing'?-14:-5.7;
     target=new THREE.Vector3(r.vehicle.position.x,r.vehicle.position.y+focusY,r.vehicle.position.z);
     const angularVelocity=amplitude*(Math.PI*2/cycleSeconds)*Math.cos(phase)*envelope;
-    const armLength=f.motionType==='swing'?13.4:5.7;
     const tangentialSpeed=Math.abs(angularVelocity*armLength);
     const centripetalG=(tangentialSpeed*tangentialSpeed)/(armLength*9.81);
     state={progress:p,distanceM:null,speedKmh:tangentialSpeed*3.6,
