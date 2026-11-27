@@ -69,7 +69,7 @@ button:hover{background:#24415a}
 .rideHudSpeed{margin-top:8px}.rideHudSpeed strong{font-size:22px;color:#ffe0a1}.rideHudSpeed span:last-child{color:#b7c8d6}
 .rideHudTrack{height:6px;border-radius:8px;background:#ffffff22;margin:9px 0 7px;overflow:hidden}
 #rideHudFill{height:100%;width:0;background:linear-gradient(90deg,#63b9d4,#f0c778);border-radius:8px}
-@media(max-width:700px){#rideHUD{bottom:175px}.rideHudSpeed strong{font-size:19px}}
+@media(max-width:700px){#rideHUD{bottom:238px}.rideHudSpeed strong{font-size:19px}}
 
 .rideSpecGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:14px 0}
 .rideSpecGrid span{padding:9px 10px;border-radius:9px;background:#1b3043;border:1px solid #ffffff17;color:#f0d59c;font-size:12px}
@@ -881,10 +881,10 @@ islandItems.forEach(it=>{const p=islandLayout[it.name];if(p){it.x=p[0];it.z=p[1]
 // Published ride specifications are separated from estimated animation timings.
 const rideSpecs={
  '아트란티스':{
-  lengthM:670,maxSpeedKmh:75,maxHeightM:22,durationSec:108,seats:8,maxInclineDeg:72,
+  lengthM:670,maxSpeedKmh:75,maxHeightM:22,durationSec:105,seats:8,maxInclineDeg:72,
   elements:'LSM 급발진 → 72° 급경사 탑햇 → 2개 헬릭스 → 실내 쇼 구간 → 브레이크 → 역 구간',
   source:'Coaster.cloud / Coasterpedia / 2003년 개장 당시 보도',
-  speedProfile:[[0,0],[1.5,15.6],[6,109.3],[12,207.3],[24,295],[40,390],[57,482],[72,540],[87,594],[100,644],[108,670]]
+  speedProfile:[[0,0],[1.5,15.6],[6,109.3],[12,207.3],[24,295],[40,390],[57,482],[72,540],[84,594],[96,644],[105,670]]
  },
  '후렌치레볼루션':{
   lengthM:630,maxSpeedKmh:70,maxHeightM:28,durationSec:105,inversions:1,seats:28,
