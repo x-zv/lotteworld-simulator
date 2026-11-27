@@ -1598,7 +1598,7 @@ function currentFloor(){
 }
 function nearestInteractable(){
   if(currentRide||elevatorTransit||foodTransit||modal.classList.contains('open'))return null;
-  let nearest=null,best=9.5;
+  let nearest=null,best=13.5;
   for(const f of facilities){
     if(['elevator','escalator','stairs'].includes(f.kind)&&f.multi){
       const d=Math.hypot(player.position.x-f.x,player.position.z-f.z);
@@ -1747,14 +1747,27 @@ function showFacility(f){
     document.querySelector('#serviceDone').onclick=closeModal;
   }
 }
-function tryInteract(){if(activeFacility)showFacility(activeFacility);else showToast('이용할 시설 가까이 이동해 주세요.')}
-document.addEventListener('keydown',e=>{
-  const key=e.key.toLowerCase();
+function tryInteract(){
+  // Recalculate at key-press time so a stale animation-frame prompt cannot block E.
+  activeFacility=nearestInteractable();
+  if(activeFacility){showFacility(activeFacility);return;}
+  showToast('시설 표지판 가까이 이동한 뒤 E를 눌러 주세요.');
+}
+window.addEventListener('keydown',e=>{
+  const key=(e.key||'').toLowerCase();
+  const isInteractKey=e.code==='KeyE'||key==='e';
+  if(isInteractKey){
+    e.preventDefault();
+    e.stopPropagation();
+    if(!e.repeat)tryInteract();
+    return;
+  }
   if(key==='escape'){closeModal();return}
-  if(key==='e'){if(!e.repeat)tryInteract();return}
-  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keyState[key]=true;e.preventDefault()}
-});
-document.addEventListener('keyup',e=>{keyState[e.key.toLowerCase()]=false});
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
+    keyState[key]=true;e.preventDefault();
+  }
+},true);
+window.addEventListener('keyup',e=>{keyState[(e.key||'').toLowerCase()]=false},true);
 document.querySelectorAll('#mobilePad button').forEach(btn=>{
   const dir=btn.dataset.move;
   btn.addEventListener('pointerdown',e=>{e.preventDefault();touchState[dir]=true;btn.setPointerCapture(e.pointerId)});
