@@ -1124,19 +1124,74 @@ function buildFacilityModel(f){
       for(let j=0;j<5;j++)box(ship,-1.5+j*.75,1.1,0,.12,1.0,.12,cream);
       beamBetween(ship,[0,1.1,0],[0,2.4,0],.08,cream);
       f.motionPart=armGroup;f.motionType='ship';rideMotionItems.push(f);
-    }else if(/후룸라이드|드림보트|신밧드|와일드밸리|와일드정글|와일드윙|스톤익스프레스/.test(f.name)){
-      const waterMat=new THREE.MeshStandardMaterial({color:0x168db5,roughness:.16,metalness:.1,transparent:true,opacity:.86});
-      const rocks=mat(0x766c5c,.98),wood=mat(0x7c4a30,.7);
-      box(g,0,.3,0,7,.18,5,waterMat);
-      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;sphere(g,Math.cos(a)*3.1,.9,Math.sin(a)*2.2,1.3,1.4,1.1,rocks);}
-      const flumePts=[[-5,1.0,2.1],[-4,2.4,1.8],[-2.5,4.8,.9],[0,6.3,0],[2.5,4.8,-.9],[4,2.4,-1.8],[5,1.0,-2.1],[3,1,-4],[-1,1,-4.6],[-5,1,-2]];
-      const flumeCurve=makeLocalRideTrack(g,flumePts,waterMat,rocks);
+    }else if(/신밧드의 모험/.test(f.name)){
+      const water=new THREE.MeshStandardMaterial({color:0x1d6f8a,roughness:.24,metalness:.05,transparent:true,opacity:.82});
+      const rock=mat(0x6d665a,.98),temple=mat(0xb99a6e,.9),glow=mat(0x52c7d2,.35);
+      const pts=[[-5,.8,3],[-6,1.2,-1],[-4,1.5,-5],[0,1.2,-7],[5,1.3,-5],[7,1.5,0],[5,1.1,5],[0,.8,7]];
+      const path=makeLocalRideTrack(g,pts,water,rock);
+      for(let j=0;j<7;j++){const a=j*Math.PI*2/7,x=Math.cos(a)*4.2,z=Math.sin(a)*4.8;sphere(g,x,1.1,z,1.45,1.65,1.1,rock);}
+      box(g,0,4,-5.8,7,5,1.2,temple);
+      const doorway=new THREE.Mesh(new THREE.PlaneGeometry(2.8,3.8),new THREE.MeshBasicMaterial({color:0x091b2b}));doorway.position.set(0,2.2,-5.12);g.add(doorway);
+      for(let j=0;j<5;j++)sphere(g,-2+j,5.2,-4.95,.12,.12,.12,glow);
       const boat=new THREE.Group();g.add(boat);
-      sphere(boat,0,0,0,1.55,.35,.65,wood);box(boat,0,.3,0,2.2,.13,1.1,mat(0xe6bc6d));
-      box(boat,0,.5,-.18,1.3,.35,.18,mat(0x67442e,.85));
-      for(let seat=0;seat<2;seat++)box(boat,seat===0?-.45:.45,.6,0,.4,.18,.5,mat(0xdec58f,.8));
-      f.motionPart=boat;f.motionType='localTrack';f.motionPath=flumeCurve;f.trackSpeed=.028;f.trackPhase=.18;rideMotionItems.push(f);
-    }else if(/풍선비행|비행|풍선/.test(f.name)){
+      sphere(boat,0,0,0,1.5,.32,.7,mat(0x87512f,.8));box(boat,0,.34,0,2.1,.16,1.1,mat(0xb98d4d,.65));
+      for(let j=0;j<2;j++)box(boat,j===0?-.42:.42,.63,0,.42,.2,.5,mat(0x563c2a,.8));
+      f.motionPart=boat;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.018;f.trackPhase=.16;rideMotionItems.push(f);
+    }else if(/드림보트/.test(f.name)){
+      const water=new THREE.MeshStandardMaterial({color:0x5db8c8,roughness:.18,transparent:true,opacity:.78});
+      const bank=mat(0xc6b88b,.9),fairy=mat(0xf0d98c,.48);
+      const pts=[[-5,.65,3],[-6,.8,0],[-4,.95,-3],[-1,1,-4.5],[3,.9,-3.5],[5,.72,0],[3,.68,3.5],[-1,.65,4.5]];
+      const path=makeLocalRideTrack(g,pts,water,bank);
+      box(g,0,.15,0,7,.25,6,water);
+      for(let j=0;j<5;j++){const x=-2+j;const trunk=cyl(g,x,1.2,-2.8,.12,.15,2.2,bank,8);sphere(g,x,2.5,-2.8,.8,.85,.8,fairy);}
+      const boat=new THREE.Group();g.add(boat);
+      sphere(boat,0,0,0,1.35,.28,.62,mat(0x9a5f37,.75));box(boat,0,.35,0,1.9,.13,1,mat(0xf0d6a0,.6));
+      f.motionPart=boat;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.012;f.trackPhase=.36;rideMotionItems.push(f);
+    }else if(/와일드밸리/.test(f.name)){
+      const water=new THREE.MeshStandardMaterial({color:0x178caf,roughness:.14,transparent:true,opacity:.88});
+      const rock=mat(0x70685b,.98),log=mat(0x7a492d,.78);
+      const pts=[[-6,1,4],[-5,1.3,1],[-4,3,-2],[-2,6,-4],[0,7,-5],[2,4,-3],[4,1,-1],[6,1,2],[4,1,5],[0,1,6],[-4,1,5]];
+      const path=makeLocalRideTrack(g,pts,water,rock);
+      for(let j=0;j<8;j++){const a=j*Math.PI/4;sphere(g,Math.cos(a)*4.4,1.2,Math.sin(a)*4.4,1.8,1.8,1.5,rock);}
+      const boat=new THREE.Group();g.add(boat);
+      sphere(boat,0,0,0,1.65,.32,.65,log);box(boat,0,.35,0,2.2,.13,1,mat(0xe4c57c,.65));
+      f.motionPart=boat;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.026;f.trackPhase=.11;rideMotionItems.push(f);
+    }else if(/후룸라이드/.test(f.name)){
+      const water=new THREE.MeshStandardMaterial({color:0x168db5,roughness:.16,metalness:.1,transparent:true,opacity:.86});
+      const rock=mat(0x766c5c,.98),wood=mat(0x7c4a30,.7);
+      const pts=[[-6,1,4],[-5,2.5,2],[-3,5,0],[-1,8,-2],[1,7,-4],[3,4,-3],[5,1,-1],[6,.9,2],[3,.8,5],[-2,.8,6]];
+      const path=makeLocalRideTrack(g,pts,water,rock);
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;sphere(g,Math.cos(a)*4,1,Math.sin(a)*4,1.7,1.5,1.5,rock);}
+      const logboat=new THREE.Group();g.add(logboat);
+      sphere(logboat,0,0,0,1.55,.35,.65,wood);box(logboat,0,.3,0,2.2,.13,1.1,mat(0xe6bc6d));
+      f.motionPart=logboat;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.024;f.trackPhase=.21;rideMotionItems.push(f);
+    }else if(/와일드정글/.test(f.name)){
+      const dirt=mat(0x756044,.95),stone=mat(0x77746a,.95),jeepMat=mat(0x47764d,.62),glass=mat(0x9ec3c8,.24);
+      const pts=[[-6,.8,3],[-5,1,-1],[-2,1.7,-5],[2,1.2,-6],[5,1,-2],[6,.8,3],[2,1,6],[-3,.8,5]];
+      const path=makeLocalRideTrack(g,pts,dirt,stone);
+      for(let j=0;j<8;j++){const a=j*Math.PI/4,x=Math.cos(a)*4.7,z=Math.sin(a)*4.7;sphere(g,x,1.1,z,1.5,1.8,1.4,stone);}
+      const jeep=new THREE.Group();g.add(jeep);
+      box(jeep,0,.45,0,1.8,.55,2.4,jeepMat);box(jeep,0,1,-.15,1.55,.65,1.35,glass);box(jeep,0,1.45,-.15,1.75,.16,1.55,jeepMat);
+      for(const x of [-.75,.75])for(const z of [-.8,.8])cyl(jeep,x,.22,z,.28,.28,.18,mat(0x262a2b,.85),12);
+      f.motionPart=jeep;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.015;f.trackPhase=.27;rideMotionItems.push(f);
+    }else if(/와일드윙/.test(f.name)){
+      const sky=mat(0x527d95,.45),wing=mat(0xcbd8db,.5),podmat=mat(0x263d53,.4);
+      const pts=[[-5,3,4],[-4,6,1],[-2,9,-2],[1,11,-4],[4,8,-2],[5,4,2],[1,3,5]];
+      const path=makeLocalRideTrack(g,pts,sky);
+      const flightPod=new THREE.Group();g.add(flightPod);
+      sphere(flightPod,0,0,0,1.2,.48,.8,podmat);
+      const left=new THREE.Mesh(new THREE.BoxGeometry(5,.12,1.3),wing);left.position.set(-2.6,.1,0);flightPod.add(left);
+      const right=left.clone();right.position.x=2.6;flightPod.add(right);
+      f.motionPart=flightPod;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.02;f.trackPhase=.42;rideMotionItems.push(f);
+    }else if(/스톤익스프레스/.test(f.name)){
+      const rail=mat(0x846d52,.72),support=mat(0xc6bda9,.75),trainMat=mat(0xa65c47,.62);
+      const pts=[[-6,1,3],[-5,1.8,0],[-3,2.8,-3],[0,4,-4],[3,2.7,-2],[5,1.5,1],[3,1,4],[-2,1,5]];
+      const path=makeLocalRideTrack(g,pts,rail,support);
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;sphere(g,Math.cos(a)*4.5,1.2,Math.sin(a)*4.5,1.4,1.7,1.2,support);}
+      const miniTrain=new THREE.Group();g.add(miniTrain);
+      for(let j=0;j<3;j++){const car=new THREE.Group();car.position.z=-j*1.15;miniTrain.add(car);box(car,0,.45,0,1.45,.75,1,trainMat);box(car,0,.95,0,1.15,.18,.78,rail);}
+      f.motionPart=miniTrain;f.motionType='localTrack';f.motionPath=path;f.trackSpeed=.014;f.trackPhase=.52;rideMotionItems.push(f);
+else if(/풍선비행|비행|풍선/.test(f.name)){
       cyl(g,0,.65,0,2.7,2.7,.35,mat(0x6c7c88,.6));
       const envelopeColors=[0xe9bf45,0x4a9978,0xe6e4d9,0xd76a3f,0xe0c452];
       for(let j=0;j<5;j++){
