@@ -680,7 +680,7 @@ function updateWalk(dt){
     // On the bridge, keep the visitor on the deck over the lake.
     if(player.position.z<-30&&player.position.z>-67)player.position.x=THREE.MathUtils.clamp(player.position.x,-5.5,5.5);
   }
-  if(player.position.z>63&&floor==='1F')player.position.y=floorHeight['1F'];
+  if(player.position.z>63&&currentFloor()==='1F')player.position.y=floorHeight['1F'];
   const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
   const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target);controls.update();
 }
