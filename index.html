@@ -1011,7 +1011,7 @@ function buildFacilityModel(f){
       const topPod=new THREE.Group();topPod.position.y=8;g.add(topPod);
       cyl(topPod,0,0,0,2.4,2.4,.5,rideYellow,32);
       f.motionPart=topPod;f.motionType='spin';rideMotionItems.push(f);
-    }    }else if(/월드모노레일/.test(f.name)){
+    }else if(/월드모노레일/.test(f.name)){
       const monoRail=mat(0x687e87,.55),monoSupport=mat(0xe5e4de,.6),monoTrainColor=mat(0x2f779b,.48);
       const monoPoints=[];
       for(let i=0;i<96;i++){const a=i/96*Math.PI*2;monoPoints.push([Math.cos(a)*58,8+Math.sin(a*2)*.55,Math.sin(a)*45]);}
