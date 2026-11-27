@@ -263,17 +263,17 @@ function addOvalPromenade(level,outerX,outerZ,innerX,innerZ,material){
  const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape,96),material);mesh.rotation.x=-Math.PI/2;mesh.position.set(0,level,atriumCenterZ);mesh.receiveShadow=true;scene.add(mesh);
 }
 const promenadeMat=mat(0xc9b9a7,.88),tileLight=mat(0xe6dfd4,.9),tileRose=mat(0xb98e7e,.88);
-addOvalPromenade(.54,36,25,18.2,11.2,promenadeMat);
+addOvalPromenade(.54,36,25,31.2,16.2,promenadeMat);
 addOvalGallery(9.7,49,36,34,23.3);
 addOvalGallery(18.9,60,45,49.5,35.6);
 // Central 30-by-60 metre skating field: photographed proportions, scaled consistently to the scene.
 const rinkApron=new THREE.Mesh(new THREE.CircleGeometry(1,128),mat(0x9da9a4,.7));
-rinkApron.rotation.x=-Math.PI/2;rinkApron.scale.set(19.2,1,10.1);rinkApron.position.set(0,.66,atriumCenterZ);scene.add(rinkApron);
+rinkApron.rotation.x=-Math.PI/2;rinkApron.scale.set(30.8,1,15.8);rinkApron.position.set(0,.66,atriumCenterZ);scene.add(rinkApron);
 const iceMaterial=new THREE.MeshPhysicalMaterial({color:0xd9f4f5,roughness:.12,metalness:.14,clearcoat:.8,clearcoatRoughness:.12});
 const ice=new THREE.Mesh(new THREE.CircleGeometry(1,128),iceMaterial);
-ice.rotation.x=-Math.PI/2;ice.scale.set(18.0,1,9.0);ice.position.set(0,.78,atriumCenterZ);ice.receiveShadow=true;scene.add(ice);
-curveTube(scene,ellipseLoop(0,1.1,atriumCenterZ,18.5,9.5),.38,mat(0xf7f7ee,.5),180);
-curveTube(scene,ellipseLoop(0,2.05,atriumCenterZ,18.5,9.5),.18,mat(0xe8f4f1,.5),180);
+ice.rotation.x=-Math.PI/2;ice.scale.set(30,1,15);ice.position.set(0,.78,atriumCenterZ);ice.receiveShadow=true;scene.add(ice);
+curveTube(scene,ellipseLoop(0,1.1,atriumCenterZ,30.5,15.5),.38,mat(0xf7f7ee,.5),180);
+curveTube(scene,ellipseLoop(0,2.05,atriumCenterZ,30.5,15.5),.18,mat(0xe8f4f1,.5),180);
 for(let i=0;i<64;i++){
  const a=i/64*Math.PI*2,x=Math.cos(a)*18.5,z=atriumCenterZ+Math.sin(a)*9.5;
  cyl(scene,x,1.1,z,.07,.07,.9,galleryRail,8);
@@ -354,6 +354,112 @@ for(const y of [2.2,11.2,20.2,29.2]){
 
 box(scene,0,-.1,-48,12,.6,40,mats.concrete);
 box(scene,-6,.55,-48,.35,2,40,mats.gold);box(scene,6,.55,-48,.35,2,40,mats.gold);
+// Photo-based indoor Adventure village: palace frontage, half-timber shops and themed rooflines.
+const villageCream=mat(0xe5dccb,.82),villageRose=mat(0xc99c8e,.8),villageTimber=mat(0x674734,.82);
+const villageBlue=mat(0x4a8eb1,.52),villageSlate=mat(0x596b78,.62),villageGlass=mat(0x91b4ba,.3);
+function villageWindow(parent,x,y,z,w=1.5,h=2.4){
+ box(parent,x,y,z,w,h,.16,villageGlass);
+ box(parent,x-w/2-.1,y,z,.18,h+.28,.2,villageCream);box(parent,x+w/2+.1,y,z,.18,h+.28,.2,villageCream);
+ box(parent,x,y+h/2+.16,z,w+.32,.25,.2,villageCream);
+ const arc=[];for(let i=0;i<=12;i++){const a=Math.PI-i*Math.PI/12;arc.push([x+Math.cos(a)*w/2,y+h/2+Math.sin(a)*w/2,z]);}
+ curveTube(parent,arc,.12,villageCream,24);
+}
+function makeTownHouse(x,z,w,h,style){
+ const g=new THREE.Group();g.position.set(x,.5,z);scene.add(g);
+ const wall=style==='timber'?mat(0xd5c3a8,.9):style==='rose'?villageRose:style==='blue'?mat(0xe4e1d7,.8):villageCream;
+ const roof=style==='blue'?villageBlue:style==='timber'?villageTimber:style==='rose'?mat(0x7d6473,.7):villageSlate;
+ box(g,0,0,0,w,h,w*.57,wall);
+ box(g,0,h*.38,w*.29,.25,h*.78,.18,villageTimber);
+ for(const level of [h*.32,h*.72])for(const wx of [-w*.28,0,w*.28])villageWindow(g,wx,level,w*.292,Math.min(1.8,w*.12),Math.min(2.4,h*.18));
+ for(const xx of [-w*.47,-w*.23,0,w*.23,w*.47])box(g,xx,h*.5,w*.3,.22,h,.2,style==='timber'?villageTimber:villageCream);
+ // Two sloping gable roof planes with visible fascia and ridge.
+ beamBetween(g,[-w*.58,h,w*.38],[0,h+w*.26,w*.38],.38,roof);
+ beamBetween(g,[0,h+w*.26,w*.38],[w*.58,h,w*.38],.38,roof);
+ beamBetween(g,[-w*.58,h,-w*.38],[0,h+w*.26,-w*.38],.38,roof);
+ beamBetween(g,[0,h+w*.26,-w*.38],[w*.58,h,-w*.38],.38,roof);
+ beamBetween(g,[0,h+w*.26,-w*.38],[0,h+w*.26,w*.38],.32,villageCream);
+ for(const xx of [-w*.44,w*.44]){
+  box(g,xx,h*.1,w*.3,.38,h*.2,.45,villageCream);
+  box(g,xx,h*.95,0,.55,.6,.7,roof);
+ }
+ if(style==='timber'){
+  for(const xx of [-w*.42,-w*.12,w*.18,w*.42])beamBetween(g,[xx,0,w*.31],[xx+((xx<0)?1:-1)*.7,h,w*.31],.14,villageTimber);
+  beamBetween(g,[-w*.48,h*.55,w*.34],[w*.48,h*.55,w*.34],.13,villageTimber);
+ }
+ const door=box(g,0,0,w*.3,w*.16,h*.43,.2,villageTimber);
+ box(g,0,h*.43,w*.31,w*.22,.2,.23,villageCream);
+ return g;
+}
+function makeAdventurePalace(){
+ const g=new THREE.Group();g.position.set(0,.5,-55);scene.add(g);
+ const facade=mat(0xe8dfd0,.78),trim=mat(0xf5eee2,.72),rose=mat(0xd1b5a6,.8),roof=mat(0x537c86,.55),windowMat=mat(0x30485a,.32);
+ box(g,0,0,0,48,21,9,facade);
+ box(g,0,20.5,0,51,1.1,10,trim);
+ box(g,0,8,4.65,11,15,.3,rose);
+ const entryArch=[];for(let i=0;i<=32;i++){const a=Math.PI-i*Math.PI/32;entryArch.push([Math.cos(a)*5.5,14+Math.sin(a)*5.5,4.9]);}
+ curveTube(g,entryArch,.4,trim,60);
+ box(g,0,0,4.75,10,2,.4,trim);
+ for(const yy of [5,11,17])for(const xx of [-18,-11,11,18])villageWindow(g,xx,yy,4.62,2.2,3.1);
+ for(const xx of [-22,22]){
+  for(const yy of [3.5,8,12.5,17])cyl(g,xx,yy,4.7,.62,.62,3.8,trim,16);
+  box(g,xx,20,0,9,1.2,10,rose);
+  const tower=new THREE.Mesh(new THREE.CylinderGeometry(4.2,5,3.8,12),facade);tower.position.set(xx,22.4,0);g.add(tower);
+  const roofCone=new THREE.Mesh(new THREE.ConeGeometry(5.2,8,12),roof);roofCone.position.set(xx,28,0);roofCone.castShadow=true;g.add(roofCone);
+  const finial=new THREE.Mesh(new THREE.ConeGeometry(.5,2,8),mat(0xc1a064,.45));finial.position.set(xx,33.1,0);g.add(finial);
+ }
+ // Central mansard-like roof and crest.
+ box(g,0,22,0,34,1.2,8,roof);
+ for(const xx of [-15,-10,-5,0,5,10,15]){
+  const dormer=new THREE.Group();dormer.position.set(xx,22,4.1);g.add(dormer);
+  box(dormer,0,0,0,2.4,3.2,.4,facade);
+  villageWindow(dormer,0,1.5,.28,1.25,1.5);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(1.6,2.1,4),roof);cap.rotation.y=Math.PI/4;cap.position.y=4;dormer.add(cap);
+ }
+ const crest=new THREE.Mesh(new THREE.TorusGeometry(2.2,.25,8,40),mat(0xc8a35e,.45));crest.position.set(0,23,4.8);g.add(crest);
+}
+makeAdventurePalace();
+makeTownHouse(-44,-43,15,12,'timber');
+makeTownHouse(-27,-51,13,10,'rose');
+makeTownHouse(31,-49,16,11,'blue');
+makeTownHouse(49,-39,13,9,'timber');
+makeTownHouse(-54,-14,12,9,'blue');
+makeTownHouse(54,-12,13,9,'rose');
+// Rock-work backdrop and layered village retaining wall seen behind the left-side facades.
+const cliffMats=[mat(0x514f49,.98),mat(0x68645a,.98),mat(0x777063,.98),mat(0x423f3a,.98)];
+for(let i=0;i<38;i++){
+ const x=-68+(i%7)*2.1,z=-59+Math.floor(i/7)*12,y=3+(i%4)*2.2;
+ const rock=sphere(scene,x,y,z,2.2+(i%3)*.8,2.5+(i%2),4+(i%4)*.4,cliffMats[i%cliffMats.length]);
+}
+for(let x=-64;x<-42;x+=4)box(scene,x,10,-61,3,9,2,mat(0x544f46,.98));
+// Palm trees and balloon-topped lantern poles from the supplied images.
+const palmLeaf=mat(0x285c42,.82),palmLeafLight=mat(0x477d50,.8),palmTrunk=mat(0x8a7657,.92);
+function makePalm(x,z,h=11){
+ const g=new THREE.Group();g.position.set(x,.5,z);scene.add(g);
+ for(let i=0;i<7;i++){
+  const y=i*h/7,lean=i*i*.018;
+  beamBetween(g,[-lean,y,0],[-(i+1)*(lean*.2),y+h/7,0],.42-i*.035,palmTrunk);
+ }
+ const crownY=h, crownX=-1.1;
+ sphere(g,crownX,crownY,0,.65,.52,.65,palmLeaf);
+ for(let i=0;i<11;i++){
+  const a=i*Math.PI*2/11,dx=Math.cos(a),dz=Math.sin(a);
+  const end=[crownX+dx*4.4,crownY-1.7+(i%3)*.18,dz*4.4];
+  beamBetween(g,[crownX,crownY,0],end,.23,palmLeafLight,.045);
+  const leaf=sphere(g,crownX+dx*2.1,crownY-.75,dz*2.1,2.25,.22,.55,palmLeaf);
+  leaf.rotation.y=-a;leaf.rotation.z=-.26;
+ }
+}
+makePalm(-57,20,10.5);makePalm(57,25,11.5);makePalm(-55,-28,9.5);makePalm(57,-28,10);
+function makeBalloonLamp(x,z){
+ const g=new THREE.Group();g.position.set(x,.5,z);scene.add(g);
+ cyl(g,0,0,0,.16,.24,8.2,mat(0x7f8d89,.55),14);
+ const hoop=new THREE.Mesh(new THREE.TorusGeometry(.48,.1,8,28),mat(0xd4b76f,.4));hoop.position.y=8.3;g.add(hoop);
+ const balloon=sphere(g,0,9.3,0,.95,1.25,.95,mat(0xf0d45e,.42));
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;curveTube(g,[[Math.cos(a)*.16,10.4,Math.sin(a)*.16],[Math.cos(a)*.6,9.8,Math.sin(a)*.6],[Math.cos(a)*.42,8.6,Math.sin(a)*.42]],.035,mat(0xffedaa,.5),20);}
+ box(g,0,7.9,0,.8,.4,.8,mat(0x9a774a,.7));
+}
+makeBalloonLamp(-59,2);makeBalloonLamp(59,-3);makeBalloonLamp(45,53);
+
 // lake around Magic Island
 const lake=new THREE.Mesh(new THREE.CircleGeometry(83,96),mats.water);lake.rotation.x=-Math.PI/2;lake.scale.set(1.18,.76,1);lake.position.set(0,.02,-112);lake.receiveShadow=true;scene.add(lake);
 // island land mass
