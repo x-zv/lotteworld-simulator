@@ -43,7 +43,7 @@ The initial facility catalog contains:
 - 28 guest-service and vertical-circulation entries, including elevators, escalators, stairs, restrooms, lockers, first aid, guest relations, and other amenities
 
 Interaction behavior:
-- **Attractions:** open a ride card and start a short animated boarding sequence.
+- **Attractions:** open a ride card and start a first-person boarding simulation with gravity-based track motion, acceleration, braking, banking, and live speed/G-load telemetry.
 - **Elevators:** choose B1F or 1F–4F; a lift cabin moves with the visitor between floors.
 - **Escalators and stairs:** move to the adjacent floor.
 - **Restaurants:** choose a sample menu category and play a short meal simulation.
@@ -62,7 +62,22 @@ Ride values currently shown in the simulator:
 - **Gyro Swing:** 27 m attraction height, 32 m top height, 96° maximum swing angle, 83 km/h listed maximum, 40 riders, and about 100 seconds from a secondary published reference. Its amplitude envelope and time-by-time speed are simulated approximations.
 - **Gyro Drop:** 70 m tower and 100 km/h listed maximum from the official guide map. The cycle length and acceleration profile are simulator estimates, not a published operating telemetry trace.
 
-Boarding hides the external player model, switches to a first-person seat camera, moves the vehicle along its modeled route or ride motion, follows the vehicle with the camera, and displays speed when a published speed is available, plus progress and elapsed time. Rides without published speed data show no numeric speed rather than inventing one. Simulator-only durations and estimated paths are labeled as estimates.
+Boarding hides the external player model, switches to a first-person seat camera, moves the vehicle along its modeled route or ride motion, follows the vehicle with the camera, and displays speed where a published maximum exists, plus progress, elapsed time, acceleration, and estimated G-load. Rides without published speed data show no numeric speed rather than inventing one. Simulator-only durations, physics coefficients, and estimated paths are labeled as estimates.
+
+
+## Physics-based ride motion
+
+The ride simulator now precomputes a distance/time table for every modeled track and uses it for both unattended train motion and first-person boarding. The table integrates speed along the route using the track elevation profile, gravitational acceleration, rolling/aerodynamic resistance, and ride-specific powered sections.
+
+- Atlantis uses an LSM launch section, gravity-driven hills, a mid-course block-brake section, and a final station brake.
+- French Revolution uses a slow chain-lift section to the first crest, a gravity-driven descent and loop, then block/station braking.
+- Water rides apply stronger water resistance and a small powered-flow term.
+- Track vehicles use a speed-dependent banking frame. Horizontal turns bank according to lateral acceleration; vertical loops rotate the rider frame with the track curvature.
+- The first-person camera follows the seat, widens its field of view as speed rises, and adds restrained vibration from acceleration and lateral load.
+- Gyro Drop uses an explicit lift, summit pause, gravity-driven fall, speed-limited coast, and brake phase. Its 100 km/h speed cap is a published maximum; its simulated timing and braking envelope are approximations.
+- Gyro Swing and pirate-ship motion use pendulum-like periods. Rotating seats, spinner rides, and carousel motion produce rider-speed and G-load estimates.
+
+The physics table improves acceleration and braking feedback, but it does **not** make the ride route a surveyed replica. The route coordinates, track elevation, banking, friction coefficients, block-brake positions, and off-camera sections remain inferred or tuned simulation values. A measured track plan or full multi-camera survey would be required to claim exact physical equivalence. Ride times generated from these inferred routes are simulator results, not official operating telemetry.
 
 ## Parade behavior
 
