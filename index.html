@@ -609,41 +609,7 @@ const atlantisTrackPoints=[
 ];
 const atlantisTrackCurve=addRailTrack(atlantisTrackPoints,coasterBlue);
 
-const gyroDropX=-48,gyroDropZ=-132,gyroDropHeight=48;
-cyl(scene,gyroDropX,2,gyroDropZ,5,5,1.6,mat(0x4b5763));
-for(let i=0;i<4;i++){
-  const a=Math.PI/4+i*Math.PI/2,x=gyroDropX+Math.cos(a)*3.3,z=gyroDropZ+Math.sin(a)*3.3;
-  beamBetween(scene,[x,2,z],[gyroDropX+Math.cos(a)*2.2,gyroDropHeight,z],.42,coasterBlue);
-}
-for(let y=6;y<gyroDropHeight;y+=6){
-  const scale=1-(y/gyroDropHeight)*.22;
-  const pts=[[gyroDropX-3*scale,y,gyroDropZ-3*scale],[gyroDropX+3*scale,y,gyroDropZ-3*scale],[gyroDropX+3*scale,y,gyroDropZ+3*scale],[gyroDropX-3*scale,y,gyroDropZ+3*scale],[gyroDropX-3*scale,y,gyroDropZ-3*scale]];
-  curveTube(scene,pts,.2,coasterBlueLight,24);
-  beamBetween(scene,[gyroDropX-3*scale,y,gyroDropZ-3*scale],[gyroDropX+3*scale,y+5,gyroDropZ+3*scale],.14,coasterBlueLight);
-  beamBetween(scene,[gyroDropX+3*scale,y,gyroDropZ-3*scale],[gyroDropX-3*scale,y+5,gyroDropZ+3*scale],.14,coasterBlueLight);
-}
-cyl(scene,gyroDropX,gyroDropHeight-2,gyroDropZ,4,4,2,coasterBlueLight);
-const gyroGondola=new THREE.Group();gyroGondola.position.set(gyroDropX,32,gyroDropZ);scene.add(gyroGondola);gyroGondola.visible=false;
-const gyroRing=new THREE.Mesh(new THREE.TorusGeometry(5.2,.55,12,64),mat(0xe7b32d));gyroRing.rotation.x=Math.PI/2;gyroGondola.add(gyroRing);
-for(let i=0;i<20;i++){const a=i*Math.PI*2/20,x=Math.cos(a)*5.2,z=Math.sin(a)*5.2;
-  const seat=box(gyroGondola,x,0,z,1.1,1.1,.85,mat(i%2?0xd64230:0xf1c13b));seat.rotation.y=-a;
-}
-const gyroSwing=new THREE.Group();gyroSwing.position.set(-39,0,-98);scene.add(gyroSwing);gyroSwing.visible=false;
-const swingWhite=mat(0xf0eee7,.65),swingRed=mat(0xb85d4f,.55);
-beamBetween(gyroSwing,[-10,1,0],[0,31,0],1.05,swingWhite);
-beamBetween(gyroSwing,[10,1,0],[0,31,0],1.05,swingWhite);
-beamBetween(gyroSwing,[-10,1,0],[-2,17,0],.6,swingWhite);
-beamBetween(gyroSwing,[10,1,0],[2,17,0],.6,swingWhite);
-beamBetween(gyroSwing,[-10,1,0],[10,1,0],.8,swingRed);
-beamBetween(gyroSwing,[-3,31,0],[3,31,0],1,swingWhite);
-const swingArm=new THREE.Group();swingArm.position.set(0,28,0);gyroSwing.add(swingArm);
-beamBetween(swingArm,[0,0,0],[0,-13,0],.65,swingRed);
-const swingSeatRing=new THREE.Mesh(new THREE.TorusGeometry(7.2,.55,12,56),mat(0xc94836));swingSeatRing.rotation.x=Math.PI/2;swingSeatRing.position.set(0,-14,0);swingArm.add(swingSeatRing);
-for(let i=0;i<24;i++){const a=i*Math.PI*2/24,x=Math.cos(a)*7.2,z=Math.sin(a)*7.2;
-  const pod=box(swingArm,x,-14,z,1.2,1.1,1,mat(i%2?0xe8bd43:0xd94a35));pod.rotation.y=-a;
-}
-const swingCanopy=new THREE.Mesh(new THREE.TorusGeometry(7.4,.3,8,56),mat(0xf2e4c7));swingCanopy.rotation.x=Math.PI/2;swingCanopy.position.set(0,-12.4,0);swingArm.add(swingCanopy);
-
+// Gyro Drop and Gyro Swing are now built from the floor-plan ride catalog models below.
 // urban context blocks outside park perimeter
 for(let i=0;i<7;i++){const x=-160+i*52;box(scene,x,0,-205,28,22+(i%3)*13,24,mat(i%2?0x9babb2:0xb9b6a9))}
 for(let i=0;i<5;i++){const x=125+i*13;box(scene,x,0,-30-i*36,9,30+(i%2)*16,13,mat(0x899ba6))}
@@ -1921,33 +1887,32 @@ function updateFacilityRideMotion(now){
   const t=now/1000;
   for(const f of rideMotionItems){
     if(!f.motionPart)continue;
-    if(f.motionType==='swing')f.motionPart.rotation.z=Math.sin(t*.75)*.48;
-    else if(f.motionType==='spin')f.motionPart.rotation.y=t*.9;
+    const spec=f.rideSpec||{};
+    if(f.motionType==='swing'){
+      const amp=THREE.MathUtils.degToRad(spec.maxAngleDeg||96);
+      f.motionPart.rotation.z=Math.sin(t*Math.PI*2/4.8+(f.motionPhase||0))*amp;
+    }else if(f.motionType==='ship'){
+      const amp=THREE.MathUtils.degToRad(spec.maxAngleDeg||75);
+      f.motionPart.rotation.z=Math.sin(t*Math.PI*2/7.6+(f.motionPhase||0))*amp;
+    }else if(f.motionType==='spin')f.motionPart.rotation.y=t*.9;
     else if(f.motionType==='drop'){
-      const phase=(t/32+(f.phase||0))%1;
-      if(phase<.46)f.motionPart.position.y=5+18*(phase/.46);
-      else if(phase<.54){const q=(phase-.46)/.08;f.motionPart.position.y=23-18*(q*q*(3-2*q));}
-      else f.motionPart.position.y=5;
-    }
-    else if(f.motionType==='water'){f.motionPart.position.x=Math.sin(t*.7)*1.5;f.motionPart.position.z=Math.cos(t*.7)*.9;}
+      const cycle=spec.simDurationSec||48;
+      const state=getDropState((t+(f.motionPhase||0))%cycle,cycle);
+      f.motionPart.position.y=state.heightM;
+    }else if(f.motionType==='water'){f.motionPart.position.x=Math.sin(t*.7)*1.5;f.motionPart.position.z=Math.cos(t*.7)*.9;}
     else if(f.motionType==='coaster'){f.motionPart.position.x=Math.sin(t*1.2)*2;f.motionPart.position.z=Math.cos(t*1.2)*1.2;}
-    else if(f.motionType==='localTrack'&&f.motionPath){
-      const progress=((t*(f.trackSpeed||.045)+(f.trackPhase||0))%1+1)%1;
-      const p=f.motionPath.getPointAt(progress),tan=f.motionPath.getTangentAt(progress);
-      f.motionPart.position.set(p.x,p.y,p.z);
+    else if((f.motionType==='localTrack'||f.motionType==='track')&&f.motionPath){
+      const duration=spec.durationSec||24,dispatchGap=6;
+      const cycle=duration+dispatchGap;
+      const elapsed=(t+(f.trackPhase||0)*cycle)%cycle;
+      const state=elapsed<duration?getRideState(spec,elapsed):{progress:0};
+      const p=f.motionPath.getPointAt(state.progress||0),tan=f.motionPath.getTangentAt(state.progress||0);
+      if(f.motionType==='localTrack')f.motionPart.position.set(p.x,p.y,p.z);
+      else f.motionPart.position.set(p.x-f.x,p.y-floorHeight['매직아일랜드'],p.z-f.z);
       f.motionPart.rotation.y=Math.atan2(tan.x,tan.z);
       f.motionPart.rotation.z=Math.atan2(tan.y,Math.hypot(tan.x,tan.z));
-    }
-    else if(f.motionType==='track'&&f.motionPath){
-      const progress=(t*.045+(f.trackPhase||0))%1,p=f.motionPath.getPointAt(progress),tan=f.motionPath.getTangentAt(progress);
-      f.motionPart.position.set(p.x-f.x,p.y-floorHeight['매직아일랜드'],p.z-f.z);
-      f.motionPart.rotation.y=Math.atan2(tan.x,tan.z);
-    }
-    else if(f.motionType==='balloon')f.motionPart.position.y=Math.sin(t*.6)*.22;
+    }else if(f.motionType==='balloon')f.motionPart.position.y=Math.sin(t*.6)*.22;
   }
-  const towerPhase=(t/34)%1;
-  gyroGondola.position.y=towerPhase<.48?5+30*(towerPhase/.48):towerPhase<.56?35-30*Math.min(1,(towerPhase-.48)/.08):5;
-  swingArm.rotation.z=Math.sin(t*.48)*.52;
 }
 let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 window.__LOTTE_SIM_READY__=true;
