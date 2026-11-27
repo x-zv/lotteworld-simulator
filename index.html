@@ -67,6 +67,7 @@ button:hover{background:#24415a}
 .rideHudTop,.rideHudSpeed,.rideHudBottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .rideHudTop strong{font-size:13px}.rideHudTop span,.rideHudBottom span{color:#b7c8d6}
 .rideHudSpeed{margin-top:8px}.rideHudSpeed strong{font-size:22px;color:#ffe0a1}.rideHudSpeed span:last-child{color:#b7c8d6}
+.rideHudView{margin-top:3px;color:#9fc4d8;font-size:10px;letter-spacing:.02em}
 .rideHudTrack{height:6px;border-radius:8px;background:#ffffff22;margin:9px 0 7px;overflow:hidden}
 #rideHudFill{height:100%;width:0;background:linear-gradient(90deg,#63b9d4,#f0c778);border-radius:8px}
 @media(max-width:700px){#rideHUD{bottom:238px}.rideHudSpeed strong{font-size:19px}}
@@ -101,7 +102,7 @@ button:hover{background:#24415a}
     <div id="modalBody"></div>
   </div>
 </div>
-<div id="toast"></div><div id="rideHUD" aria-live="polite"><div class="rideHudTop"><strong id="rideHudName">탑승 중</strong><span id="rideHudClock">00:00</span></div><div class="rideHudSpeed"><span>현재 속도</span><strong id="rideHudSpeed">0 km/h</strong><span id="rideHudMax">최고 —</span></div><div class="rideHudTrack"><div id="rideHudFill"></div></div><div class="rideHudBottom"><span id="rideHudDistance">0 / — m</span><span id="rideHudPhase">출발 준비</span></div></div>
+<div id="toast"></div><div id="rideHUD" aria-live="polite"><div class="rideHudTop"><strong id="rideHudName">탑승 중</strong><span id="rideHudClock">00:00</span></div><div class="rideHudView">1인칭 탑승 시점 · 플레이어 모델 숨김</div><div class="rideHudSpeed"><span>현재 속도</span><strong id="rideHudSpeed">0 km/h</strong><span id="rideHudMax">최고 —</span></div><div class="rideHudTrack"><div id="rideHudFill"></div></div><div class="rideHudBottom"><span id="rideHudDistance">0 / — m</span><span id="rideHudPhase">출발 준비</span></div></div>
 <script type="importmap">
 {
   "imports": {
@@ -2053,7 +2054,7 @@ function updateFacilityRideMotion(now){
     }else if(f.motionType==='balloon')f.motionPart.position.y=Math.sin(t*.6)*.22;
   }
 }
-let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
+let previousFrame=performance.now();function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min(.05,(now-previousFrame)/1000);previousFrame=now;updateWalk(dt);updateRide(now);updateElevator(now);updateMeal(now);updateFacilityRideMotion(now);updateCrowd(now,dt);animatePlayerAvatar(now);updateInteraction();if(!currentRide)controls.update();updateParade(now);renderer.render(scene,camera);updateLabels()}animate();
 window.__LOTTE_SIM_READY__=true;
 const bootLoader=document.querySelector('#loading');
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
