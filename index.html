@@ -120,6 +120,46 @@ function mat(color,roughness=.8){return new THREE.MeshStandardMaterial({color,ro
 function box(parent,x,y,z,w,h,d,material){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function cyl(parent,x,y,z,r1,r2,h,material,segments=32){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),material);m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function sphere(parent,x,y,z,rx,ry,rz,material){const m=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),material);m.position.set(x,y,z);m.scale.set(rx,ry,rz);m.castShadow=true;parent.add(m);return m}
+function beamBetween(parent,a,b,radius,material,radiusTop=radius){
+  const start=new THREE.Vector3(a[0],a[1],a[2]),end=new THREE.Vector3(b[0],b[1],b[2]);
+  const dir=end.clone().sub(start),length=dir.length();
+  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radiusTop,radius,length,12),material);
+  mesh.position.copy(start).add(end).multiplyScalar(.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+  mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function curveTube(parent,points,radius,material,segments=64){
+  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,segments,radius,10,false),material);
+  mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function makeCanvasSign(main,sub,background='#253b55',foreground='#fff2d1'){
+  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=256;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle=background;ctx.fillRect(0,0,1024,256);
+  ctx.strokeStyle='#d8b56a';ctx.lineWidth=12;ctx.strokeRect(10,10,1004,236);
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=foreground;
+  ctx.font='bold 76px sans-serif';ctx.fillText(main,512,104,940);
+  if(sub){ctx.font='bold 34px sans-serif';ctx.fillText(sub,512,190,940);}
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  return texture;
+}
+function createClockTexture(){
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
+  const ctx=canvas.getContext('2d'),cx=256,cy=256;
+  ctx.fillStyle='#eee7d8';ctx.beginPath();ctx.arc(cx,cy,238,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#8f795d';ctx.lineWidth=18;ctx.stroke();
+  ctx.strokeStyle='#3d4250';ctx.lineWidth=6;
+  for(let i=0;i<12;i++){const a=i*Math.PI/6-Math.PI/2;const x=cx+Math.cos(a)*194,y=cy+Math.sin(a)*194;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*214,cy+Math.sin(a)*214);ctx.lineTo(x,y);ctx.stroke();}
+  const roman=['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'];
+  ctx.fillStyle='#283442';ctx.font='bold 36px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';
+  roman.forEach((v,i)=>{const a=i*Math.PI/6-Math.PI/2;ctx.fillText(v,cx+Math.cos(a)*155,cy+Math.sin(a)*155)});
+  ctx.fillStyle='#9b3d4a';ctx.beginPath();ctx.arc(cx,cy,12,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#2c3b4b';ctx.lineWidth=11;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-7,cy-105);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+95,cy+32);ctx.stroke();
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
+}
 function label(text,x,y,z){const el=document.createElement('div');el.className='label';el.textContent=text;labelLayer.appendChild(el);labels.push({el,p:new THREE.Vector3(x,y,z)})}
 const labels=[];
 const terrain=new THREE.Group();scene.add(terrain);
@@ -139,14 +179,52 @@ box(scene,0,-8,-25,146,44,2,facadeMat);
 box(scene,-48,-8,66,50,44,2,facadeMat);box(scene,48,-8,66,50,44,2,facadeMat);
 for(const y of [8.5,17.5,26.5]){box(scene,-73,y,-25,2,.35,92,mats.gold);box(scene,73,y,-25,2,.35,92,mats.gold);}
 for(let x=-69;x<=69;x+=12){box(scene,x,2,-26,1.1,16,1.2,mats.gold)}
-// dome elliptical half-shell using scaled sphere, clipped visually by podium
-const dome=sphere(scene,0,35,18,69,34,42,mats.glass);dome.scale.y=1;
-const domeWire=new THREE.Mesh(new THREE.WireframeGeometry(new THREE.SphereGeometry(1,24,12)),new THREE.LineBasicMaterial({color:0xc6d9df,transparent:true,opacity:.55}));domeWire.position.set(0,35,18);domeWire.scale.set(69,34,42);scene.add(domeWire);
-// entrance portico and towers
-box(scene,-25,2,69,4,13,5,mats.blue);box(scene,25,2,69,4,13,5,mats.blue);box(scene,0,14,69,54,2,7,mats.gold);
-for(const x of [-31,31]){box(scene,x,2,68,9,24,10,mats.wall);cyl(scene,x,26,68,5,4,5,mats.roof);sphere(scene,x,33,68,2.2,3.5,2.2,mats.gold)}
-// side wings / service blocks
-box(scene,-89,1,10,26,20,68,mats.wall);box(scene,89,1,10,26,20,68,mats.wall);
+// Recognizable elliptical glass half-dome with repeated metal ribs and horizontal glazing bands.
+const domeGeo=new THREE.SphereGeometry(1,72,36,0,Math.PI*2,0,Math.PI/2);
+const dome=new THREE.Mesh(domeGeo,mats.glass);dome.position.set(0,19,18);dome.scale.set(69,34,42);dome.castShadow=false;scene.add(dome);
+const domeRibMat=mat(0x8b9eaa,.48),domeBandMat=mat(0xd9e1e3,.38);
+for(let i=0;i<32;i++){
+  const a=i*Math.PI*2/32,pts=[];
+  for(let j=0;j<=24;j++){const p=j/24*Math.PI/2;pts.push([69*Math.sin(p)*Math.cos(a),19+34*Math.cos(p),18+42*Math.sin(p)*Math.sin(a)]);}
+  curveTube(scene,pts,.42,domeRibMat,48);
+}
+for(const p of [.28,.52,.75,.93]){
+  const pts=[];for(let i=0;i<=80;i++){const a=i/80*Math.PI*2;pts.push([69*p*Math.cos(a),19+34*Math.sqrt(1-p*p),18+42*p*Math.sin(a)]);}
+  curveTube(scene,pts,.28,domeBandMat,100);
+}
+cyl(scene,0,18.55,18,69,69,1,domeRibMat,96);
+// Signature Adventure entrance: pale tiled facade, inset glazed arch, clock face and burgundy sign.
+const stone=mat(0xd8d0c5,.8),stoneLight=mat(0xf1e9dd,.7),roseStone=mat(0xd7b9b3,.8),darkGlass=mat(0x22313e,.28),burgundy=mat(0x713344,.42),copper=mat(0xb58d55,.42);
+box(scene,0,1,73,66,29,4,stone);
+box(scene,-30,2,70,7,27,3,stoneLight);box(scene,30,2,70,7,27,3,stoneLight);
+for(const x of [-24,-18,18,24]){
+  box(scene,x,2,68,1.15,23,1.3,stoneLight);
+  for(const y of [5,12,19])cyl(scene,x,y,67.2,.78,.78,.42,copper,12);
+}
+box(scene,0,2,70,28,16,1.0,darkGlass);
+box(scene,-16,2,70,3,21,2,stoneLight);box(scene,16,2,70,3,21,2,stoneLight);
+const entryArchPoints=[];
+for(let i=0;i<=36;i++){const a=Math.PI-i*Math.PI/36;entryArchPoints.push([Math.cos(a)*16,19+Math.sin(a)*11,68.85]);}
+curveTube(scene,entryArchPoints,.8,stoneLight,80);
+curveTube(scene,entryArchPoints.map(p=>[p[0],p[1],p[2]+.45]),.2,copper,80);
+box(scene,0,1.9,70,30,1.2,2,burgundy);
+const entrySign=new THREE.Mesh(new THREE.PlaneGeometry(24,3.2),new THREE.MeshBasicMaterial({map:makeCanvasSign('LOTTE WORLD','ADVENTURE','#713344','#fff1d6')}));
+entrySign.position.set(0,4.3,68.7);scene.add(entrySign);
+const upperSign=new THREE.Mesh(new THREE.PlaneGeometry(34,3.2),new THREE.MeshBasicMaterial({map:makeCanvasSign('롯데월드','LOTTE WORLD ADVENTURE','#f0e7d9','#803a45')}));
+upperSign.position.set(0,30,70.75);scene.add(upperSign);
+const clockOuter=new THREE.Mesh(new THREE.CylinderGeometry(6.2,6.2,.9,64),copper);clockOuter.rotation.x=Math.PI/2;clockOuter.position.set(0,23.2,70.2);scene.add(clockOuter);
+const clockFace=new THREE.Mesh(new THREE.CircleGeometry(5.65,64),new THREE.MeshBasicMaterial({map:createClockTexture()}));clockFace.position.set(0,23.2,70.72);scene.add(clockFace);
+for(const x of [-33,33]){
+  box(scene,x,2,69,7,24,8,stoneLight);cyl(scene,x,26,69,4.8,4.3,4,roseStone);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(4.6,8,12),mats.roof);roof.position.set(x,32,69);roof.castShadow=true;scene.add(roof);
+  const finial=new THREE.Mesh(new THREE.ConeGeometry(.65,3,8),copper);finial.position.set(x,37,69);scene.add(finial);
+}
+for(const x of [-55,-44,44,55]){
+  box(scene,x,2,69,3,25,7,roseStone);
+  for(let y=4;y<27;y+=5)box(scene,x,y,65.35,2.4,.25,.22,stoneLight);
+}
+const sideWingMat=mat(0xd9d3c8,.75);
+box(scene,-89,1,10,26,20,68,sideWingMat);box(scene,89,1,10,26,20,68,sideWingMat);
 box(scene,-88,21,10,28,2,70,mats.roof);box(scene,88,21,10,28,2,70,mats.roof);
 // Walkable pedestrian bridge from Adventure to Magic Island.
 box(scene,0,-.1,-48,12,.6,40,mats.concrete);
