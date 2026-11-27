@@ -226,7 +226,30 @@ for(const x of [-55,-44,44,55]){
 const sideWingMat=mat(0xd9d3c8,.75);
 box(scene,-89,1,10,26,20,68,sideWingMat);box(scene,89,1,10,26,20,68,sideWingMat);
 box(scene,-88,21,10,28,2,70,mats.roof);box(scene,88,21,10,28,2,70,mats.roof);
-// Walkable pedestrian bridge from Adventure to Magic Island.
+// Photo-matched curtain-wall rhythm and structural bands on the Adventure exterior.
+const facadeMetal=mat(0x8798a2,.42),facadeLight=mat(0xe5e4dc,.62),facadeShadow=mat(0x6f7e87,.7);
+for(const x of [-74.3,74.3]){
+  for(let z=-22;z<=63;z+=7.5)box(scene,x,14,z,.32,44,.42,facadeMetal);
+  for(const y of [-6.7,2.3,11.3,20.3,29.3])box(scene,x,y,20,.45,.38,88,facadeLight);
+}
+for(let x=-68;x<=68;x+=8.5){
+  box(scene,x,-7.8,-26,.28,43,.3,facadeMetal);
+  box(scene,x,-7.8,66,.28,43,.3,facadeMetal);
+}
+for(const y of [-6.8,2.2,11.2,20.2,29.2]){
+  box(scene,0,y,-25.8,144,.38,.3,facadeLight);
+  box(scene,0,y,66.9,100,.38,.3,facadeLight);
+}
+// Large internal stone piers and gallery rails make the glazed atrium read as a multi-level park.
+for(const x of [-62,62])for(const z of [-13,14,42]){
+  cyl(scene,x,-8,z,.8,.95,37,facadeLight,20);
+  for(const y of [1,10,19,28])cyl(scene,x,y,z,1.15,1.15,.5,facadeMetal,20);
+}
+for(const y of [2.2,11.2,20.2,29.2]){
+  box(scene,-53,y,20,1.0,.32,75,facadeMetal);box(scene,53,y,20,1.0,.32,75,facadeMetal);
+  for(let z=-16;z<58;z+=4.5){box(scene,-53,y+-.75,z,.22,1.5,.22,facadeLight);box(scene,53,y+-.75,z,.22,1.5,.22,facadeLight);}
+}
+
 box(scene,0,-.1,-48,12,.6,40,mats.concrete);
 box(scene,-6,.55,-48,.35,2,40,mats.gold);box(scene,6,.55,-48,.35,2,40,mats.gold);
 // lake around Magic Island
@@ -704,13 +727,25 @@ function buildFacilityModel(f){
       sphere(boat,0,0,0,1.55,.35,.65,wood);box(boat,0,.3,0,2.2,.13,1.1,mat(0xe6bc6d));
       f.motionPart=boat;f.motionType='water';rideMotionItems.push(f);
     }else if(/풍선비행|비행|풍선/.test(f.name)){
-      const basketColors=[0xe0a247,0x4d9c78,0xe3d16d,0x5a91b3,0xc66b4d];
-      cyl(g,0,.7,0,2.5,2.5,.35,mat(0x6f8190,.6));
-      for(let j=0;j<5;j++){const a=j*Math.PI*2/5,x=Math.cos(a)*2,z=Math.sin(a)*2;
-        const balloonMat=mat(basketColors[j],.5);sphere(g,x,5.8,z,1.2,1.5,1.2,balloonMat);
-        for(let k=0;k<6;k++){const ang=k*Math.PI/3;beamBetween(g,[x+Math.cos(ang)*.8,4.9,z+Math.sin(ang)*.8],[x+Math.cos(ang)*.3,2.5,z+Math.sin(ang)*.3],.045,gold);}
-        box(g,x,2.2,z,1.25,.65,1.1,mat(0x805138,.7));
-        for(let k=-1;k<=1;k++)beamBetween(g,[x+k*.35,2.55,z],[x+k*.35,4.9,z],.045,gold);
+      cyl(g,0,.65,0,2.7,2.7,.35,mat(0x6c7c88,.6));
+      const envelopeColors=[0xe9bf45,0x4a9978,0xe6e4d9,0xd76a3f,0xe0c452];
+      for(let j=0;j<5;j++){
+        const a=j*Math.PI*2/5,x=Math.cos(a)*2.0,z=Math.sin(a)*2.0;
+        const envelope=new THREE.Group();envelope.position.set(x,5.7,z);g.add(envelope);
+        sphere(envelope,0,0,0,1.25,1.48,1.25,mat(0xf4eee0,.65));
+        for(let k=0;k<8;k++){
+          const geo=new THREE.SphereGeometry(1,12,18,k*Math.PI/4,Math.PI/4,0,Math.PI);
+          const panel=new THREE.Mesh(geo,mat(k%2?envelopeColors[j]:0xf3ecdf,.45));
+          panel.scale.set(1.25,1.48,1.25);envelope.add(panel);
+        }
+        const ropeMat=mat(0x6b5946,.9);
+        for(let k=0;k<8;k++){
+          const a2=k*Math.PI/4;
+          beamBetween(g,[x+Math.cos(a2)*.85,4.75,z+Math.sin(a2)*.85],[x+Math.cos(a2)*.42,2.3,z+Math.sin(a2)*.42],.035,ropeMat);
+        }
+        const basket=box(g,x,1.75,z,1.2,.65,1.05,mat(0x98663e,.85));
+        for(let k=-1;k<=1;k++)box(g,x+k*.34,2.1,z,.055,.35,1.12,gold);
+        box(g,x,1.78,z,1.25,.12,.1,mat(0x553c2c,.9));
       }
       f.motionPart=g;f.motionType='balloon';rideMotionItems.push(f);
     }else if(/자이로스핀/.test(f.name)){
